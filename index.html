@@ -45,27 +45,39 @@
         var scene = null;
         var sceneToRender = null;
         var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
-        var coordSystem=function(b){var g=b.normalize();b=0==Math.abs(b.x)&&0==Math.abs(b.y)?(new BABYLON.Vector3(b.z,0,0)).normalize():(new BABYLON.Vector3(b.y,-b.x,0)).normalize();var r=BABYLON.Vector3.Cross(b,g);return{x:b,y:g,z:r}},randPct=function(b,g){return 0==g?b:(1+(1-2*Math.random())*g)*b},createBranch=function(b,g,r,w,h,l,v,n,x){for(var t=[],d,c=[],f,q=[],a=0;12>a;a++)t[a]=[];for(var m=0;m<h;m++)for(a=m/h,d=g.y.scale(a*r),d.addInPlace(g.x.scale(v*Math.exp(-a)*Math.sin(l*a*Math.PI))),d.addInPlace(b),c[m]=d,d=n*(1+(.4*Math.random()-.2))*(1-(1-w)*a),q.push(d),a=0;12>a;a++)f=a*Math.PI/6,f=g.x.scale(d*Math.cos(f)).add(g.z.scale(d*Math.sin(f))),f.addInPlace(c[m]),t[a].push(f);for(a=0;12>a;a++)t[a].push(c[c.length-1]);return{branch:BABYLON.MeshBuilder.CreateRibbon("branch",{pathArray:t,closeArray:!0},x),core:c,_radii:q}},createTreeBase=function(b,g,r,w,h,l,v,n,x,t){var d=2/(1+Math.sqrt(5)),c=new BABYLON.Vector3(0,1,0),f,c=coordSystem(c),q=new BABYLON.Vector3(0,0,0),a=[],m=[],e=[],A=[],q=createBranch(q,c,b,g,r,1,x,1,t);a.push(q.branch);var y=q.core;m.push(y);e.push(q._radii);A.push(c);for(var q=y[y.length-1],y=2*Math.PI/h,z,u,p,C,B=0;B<h;B++)if(f=randPct(B*y,.25),f=c.y.scale(Math.cos(randPct(l,.15))).add(c.x.scale(Math.sin(randPct(l,.15))*Math.sin(f))).add(c.z.scale(Math.sin(randPct(l,.15))*Math.cos(f))),z=coordSystem(f),f=createBranch(q,z,b*v,g,r,n,x*d,g,t),p=f.core,p=p[p.length-1],a.push(f.branch),m.push(f.core),e.push(f._radii),A.push(z),1<w)for(var D=0;D<h;D++)u=randPct(D*y,.25),u=z.y.scale(Math.cos(randPct(l,.15))).add(z.x.scale(Math.sin(randPct(l,.15))*Math.sin(u))).add(z.z.scale(Math.sin(randPct(l,.15))*Math.cos(u))),u=coordSystem(u),C=createBranch(p,u,b*v*v,g,r,n,x*d*d,g*g,t),a.push(C.branch),m.push(C.core),e.push(f._radii),A.push(u);return{tree:BABYLON.Mesh.MergeMeshes(a),paths:m,radii:e,directions:A}},createTree=function(b,g,r,w,h,l,v,n,x,t,d,c,f,q,a,m){1!=h&&2!=h&&(h=1);var e=createTreeBase(b,g,r,h,l,v,n,d,c,m);e.tree.material=w;var A=b*Math.pow(n,h),y=A/(2*f),z=1.5*Math.pow(g,h-1);n=BABYLON.MeshBuilder.CreateDisc("leaf",{radius:z/2,tessellation:12,sideOrientation:BABYLON.Mesh.DOUBLESIDE},m);b=new BABYLON.SolidParticleSystem("leaveSPS",m,{updatable:!1});b.addShape(n,2*f*Math.pow(l,h),{positionFunction:function(b,a,g){a=Math.floor(g/(2*f));1==h?a++:a=2+a%l+Math.floor(a/l)*(l+1);var E=(g%(2*f)*y+3*y/2)/A,d=Math.ceil(r*E);d>e.paths[a].length-1&&(d=e.paths[a].length-1);var k=d-1,c=k/(r-1),m=d/(r-1);b.position=new BABYLON.Vector3(e.paths[a][k].x+(e.paths[a][d].x-e.paths[a][k].x)*(E-c)/(m-c),e.paths[a][k].y+(e.paths[a][d].y-e.paths[a][k].y)*(E-c)/(m-c)+(.6*z/q+e.radii[a][d])*(g%2*2-1),e.paths[a][k].z+(e.paths[a][d].z-e.paths[a][k].z)*(E-c)/(m-c));b.rotation.z=Math.random()*Math.PI/4;b.rotation.y=Math.random()*Math.PI/2;b.rotation.z=Math.random()*Math.PI/4;b.scale.y=1/q}});b=b.buildMesh();b.billboard=!0;n.dispose();d=new BABYLON.SolidParticleSystem("miniSPS",m,{updatable:!1});n=new BABYLON.SolidParticleSystem("minileavesSPS",m,{updatable:!1});var u=[];c=2*Math.PI/l;for(var p=0;p<Math.pow(l,h+1);p++)u.push(randPct(Math.floor(p/Math.pow(l,h))*c,.2));c=function(a,b,d){var c=d%Math.pow(l,h);1==h?c++:c=2+c%l+Math.floor(c/l)*(l+1);var f=e.directions[c],c=new BABYLON.Vector3(e.paths[c][e.paths[c].length-1].x,e.paths[c][e.paths[c].length-1].y,e.paths[c][e.paths[c].length-1].z),k=u[d],k=f.y.scale(Math.cos(randPct(v,0))).add(f.x.scale(Math.sin(randPct(v,0))*Math.sin(k))).add(f.z.scale(Math.sin(randPct(v,0))*Math.cos(k))),f=BABYLON.Vector3.Cross(BABYLON.Axis.Y,k),k=Math.acos(BABYLON.Vector3.Dot(k,BABYLON.Axis.Y)/k.length());a.scale=new BABYLON.Vector3(Math.pow(g,h+1),Math.pow(g,h+1),Math.pow(g,h+1));a.quaternion=BABYLON.Quaternion.RotationAxis(f,k);a.position=c;};for(var C=[],B=[],p=e.paths.length,D=e.paths[0].length,F=0;F<x;F++)C.push(2*Math.PI*Math.random()-Math.PI),B.push([Math.floor(Math.random()*p),Math.floor(Math.random()*(D-1)+1)]);p=function(a,c,b){var d=B[b][0],f=B[b][1],k=e.directions[d];c=new BABYLON.Vector3(e.paths[d][f].x,e.paths[d][f].y,e.paths[d][f].z);c.addInPlace(k.z.scale(e.radii[d][f]/2));b=C[b];k=k.y.scale(Math.cos(randPct(t,0))).add(k.x.scale(Math.sin(randPct(t,0))*Math.sin(b))).add(k.z.scale(Math.sin(randPct(t,0))*Math.cos(b)));b=BABYLON.Vector3.Cross(BABYLON.Axis.Y,k);k=Math.acos(BABYLON.Vector3.Dot(k,BABYLON.Axis.Y)/k.length());a.scale=new BABYLON.Vector3(Math.pow(g,h+1),Math.pow(g,h+1),Math.pow(g,h+1));a.quaternion=BABYLON.Quaternion.RotationAxis(b,k);a.position=c};d.addShape(e.tree,Math.pow(l,h+1),{positionFunction:c});d.addShape(e.tree,x,{positionFunction:p});d=d.buildMesh();d.material=w;n.addShape(b,Math.pow(l,h+1),{positionFunction:c});n.addShape(b,x,{positionFunction:p});w=n.buildMesh();b.dispose();w.material=a;a=BABYLON.MeshBuilder.CreateBox("",{},m);a.isVisible=!1;e.tree.parent=a;d.parent=a;return w.parent=a};
+      //  var coordSystem=function(b){var g=b.normalize();b=0==Math.abs(b.x)&&0==Math.abs(b.y)?(new BABYLON.Vector3(b.z,0,0)).normalize():(new BABYLON.Vector3(b.y,-b.x,0)).normalize();var r=BABYLON.Vector3.Cross(b,g);return{x:b,y:g,z:r}},randPct=function(b,g){return 0==g?b:(1+(1-2*Math.random())*g)*b},createBranch=function(b,g,r,w,h,l,v,n,x){for(var t=[],d,c=[],f,q=[],a=0;12>a;a++)t[a]=[];for(var m=0;m<h;m++)for(a=m/h,d=g.y.scale(a*r),d.addInPlace(g.x.scale(v*Math.exp(-a)*Math.sin(l*a*Math.PI))),d.addInPlace(b),c[m]=d,d=n*(1+(.4*Math.random()-.2))*(1-(1-w)*a),q.push(d),a=0;12>a;a++)f=a*Math.PI/6,f=g.x.scale(d*Math.cos(f)).add(g.z.scale(d*Math.sin(f))),f.addInPlace(c[m]),t[a].push(f);for(a=0;12>a;a++)t[a].push(c[c.length-1]);return{branch:BABYLON.MeshBuilder.CreateRibbon("branch",{pathArray:t,closeArray:!0},x),core:c,_radii:q}},createTreeBase=function(b,g,r,w,h,l,v,n,x,t){var d=2/(1+Math.sqrt(5)),c=new BABYLON.Vector3(0,1,0),f,c=coordSystem(c),q=new BABYLON.Vector3(0,0,0),a=[],m=[],e=[],A=[],q=createBranch(q,c,b,g,r,1,x,1,t);a.push(q.branch);var y=q.core;m.push(y);e.push(q._radii);A.push(c);for(var q=y[y.length-1],y=2*Math.PI/h,z,u,p,C,B=0;B<h;B++)if(f=randPct(B*y,.25),f=c.y.scale(Math.cos(randPct(l,.15))).add(c.x.scale(Math.sin(randPct(l,.15))*Math.sin(f))).add(c.z.scale(Math.sin(randPct(l,.15))*Math.cos(f))),z=coordSystem(f),f=createBranch(q,z,b*v,g,r,n,x*d,g,t),p=f.core,p=p[p.length-1],a.push(f.branch),m.push(f.core),e.push(f._radii),A.push(z),1<w)for(var D=0;D<h;D++)u=randPct(D*y,.25),u=z.y.scale(Math.cos(randPct(l,.15))).add(z.x.scale(Math.sin(randPct(l,.15))*Math.sin(u))).add(z.z.scale(Math.sin(randPct(l,.15))*Math.cos(u))),u=coordSystem(u),C=createBranch(p,u,b*v*v,g,r,n,x*d*d,g*g,t),a.push(C.branch),m.push(C.core),e.push(f._radii),A.push(u);return{tree:BABYLON.Mesh.MergeMeshes(a),paths:m,radii:e,directions:A}},createTree=function(b,g,r,w,h,l,v,n,x,t,d,c,f,q,a,m){1!=h&&2!=h&&(h=1);var e=createTreeBase(b,g,r,h,l,v,n,d,c,m);e.tree.material=w;var A=b*Math.pow(n,h),y=A/(2*f),z=1.5*Math.pow(g,h-1);n=BABYLON.MeshBuilder.CreateDisc("leaf",{radius:z/2,tessellation:12,sideOrientation:BABYLON.Mesh.DOUBLESIDE},m);b=new BABYLON.SolidParticleSystem("leaveSPS",m,{updatable:!1});b.addShape(n,2*f*Math.pow(l,h),{positionFunction:function(b,a,g){a=Math.floor(g/(2*f));1==h?a++:a=2+a%l+Math.floor(a/l)*(l+1);var E=(g%(2*f)*y+3*y/2)/A,d=Math.ceil(r*E);d>e.paths[a].length-1&&(d=e.paths[a].length-1);var k=d-1,c=k/(r-1),m=d/(r-1);b.position=new BABYLON.Vector3(e.paths[a][k].x+(e.paths[a][d].x-e.paths[a][k].x)*(E-c)/(m-c),e.paths[a][k].y+(e.paths[a][d].y-e.paths[a][k].y)*(E-c)/(m-c)+(.6*z/q+e.radii[a][d])*(g%2*2-1),e.paths[a][k].z+(e.paths[a][d].z-e.paths[a][k].z)*(E-c)/(m-c));b.rotation.z=Math.random()*Math.PI/4;b.rotation.y=Math.random()*Math.PI/2;b.rotation.z=Math.random()*Math.PI/4;b.scale.y=1/q}});b=b.buildMesh();b.billboard=!0;n.dispose();d=new BABYLON.SolidParticleSystem("miniSPS",m,{updatable:!1});n=new BABYLON.SolidParticleSystem("minileavesSPS",m,{updatable:!1});var u=[];c=2*Math.PI/l;for(var p=0;p<Math.pow(l,h+1);p++)u.push(randPct(Math.floor(p/Math.pow(l,h))*c,.2));c=function(a,b,d){var c=d%Math.pow(l,h);1==h?c++:c=2+c%l+Math.floor(c/l)*(l+1);var f=e.directions[c],c=new BABYLON.Vector3(e.paths[c][e.paths[c].length-1].x,e.paths[c][e.paths[c].length-1].y,e.paths[c][e.paths[c].length-1].z),k=u[d],k=f.y.scale(Math.cos(randPct(v,0))).add(f.x.scale(Math.sin(randPct(v,0))*Math.sin(k))).add(f.z.scale(Math.sin(randPct(v,0))*Math.cos(k))),f=BABYLON.Vector3.Cross(BABYLON.Axis.Y,k),k=Math.acos(BABYLON.Vector3.Dot(k,BABYLON.Axis.Y)/k.length());a.scale=new BABYLON.Vector3(Math.pow(g,h+1),Math.pow(g,h+1),Math.pow(g,h+1));a.quaternion=BABYLON.Quaternion.RotationAxis(f,k);a.position=c;};for(var C=[],B=[],p=e.paths.length,D=e.paths[0].length,F=0;F<x;F++)C.push(2*Math.PI*Math.random()-Math.PI),B.push([Math.floor(Math.random()*p),Math.floor(Math.random()*(D-1)+1)]);p=function(a,c,b){var d=B[b][0],f=B[b][1],k=e.directions[d];c=new BABYLON.Vector3(e.paths[d][f].x,e.paths[d][f].y,e.paths[d][f].z);c.addInPlace(k.z.scale(e.radii[d][f]/2));b=C[b];k=k.y.scale(Math.cos(randPct(t,0))).add(k.x.scale(Math.sin(randPct(t,0))*Math.sin(b))).add(k.z.scale(Math.sin(randPct(t,0))*Math.cos(b)));b=BABYLON.Vector3.Cross(BABYLON.Axis.Y,k);k=Math.acos(BABYLON.Vector3.Dot(k,BABYLON.Axis.Y)/k.length());a.scale=new BABYLON.Vector3(Math.pow(g,h+1),Math.pow(g,h+1),Math.pow(g,h+1));a.quaternion=BABYLON.Quaternion.RotationAxis(b,k);a.position=c};d.addShape(e.tree,Math.pow(l,h+1),{positionFunction:c});d.addShape(e.tree,x,{positionFunction:p});d=d.buildMesh();d.material=w;n.addShape(b,Math.pow(l,h+1),{positionFunction:c});n.addShape(b,x,{positionFunction:p});w=n.buildMesh();b.dispose();w.material=a;a=BABYLON.MeshBuilder.CreateBox("",{},m);a.isVisible=!1;e.tree.parent=a;d.parent=a;return w.parent=a};
 
         var createScene = function () {
             var scene = new BABYLON.Scene(engine);
-            var light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, -1, -0.3), scene);
+            /*var light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, -1, -0.3), scene);
             var camera = new BABYLON.FreeCamera("Camera", new BABYLON.Vector3(0, 5, -20), scene);
             camera.speed = 0.4;
         
             camera.attachControl(canvas, true);
         
             light.position = new BABYLON.Vector3(20, 60, 30);
-        
+        */
+
+            var camera1 = new BABYLON.ArcRotateCamera("camera1", Math.PI / 2, Math.PI / 4, 10, new BABYLON.Vector3(0, -5, 0), scene);
+            scene.activeCamera = camera1;
+            scene.activeCamera.attachControl(canvas, true);
+            camera1.lowerRadiusLimit = 2;
+            camera1.upperRadiusLimit = 10;
+            camera1.wheelDeltaPercentage = 0.01;
+
+            var light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, -0.5, -1.0), scene);
+            light.position = new BABYLON.Vector3(0, 5, 5);
+
+
             scene.ambientColor = BABYLON.Color3.FromInts(10, 30, 10);
             scene.clearColor = BABYLON.Color3.FromInts(135, 206, 250);
-            scene.gravity = new BABYLON.Vector3(0, -0.5, 0);
+            scene.gravity = new BABYLON.Vector3(0, -9.8, 0);
         
             // Fog
-            scene.fogMode = BABYLON.Scene.FOGMODE_EXP;
-            scene.fogDensity = 0.02;
-            scene.fogColor = scene.clearColor;
-        
+          //  scene.fogMode = BABYLON.Scene.FOGMODE_EXP;
+          //  scene.fogDensity = 0.02;
+          //   scene.fogColor = scene.clearColor;
+
             // Skybox
             var skybox = BABYLON.Mesh.CreateBox("skyBox", 150.0, scene);
             var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
@@ -77,7 +89,18 @@
             skyboxMaterial.disableLighting = true;
             skybox.material = skyboxMaterial;
             skybox.infiniteDistance = true;
-        
+
+            // GUI
+            var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+            var instructions = new BABYLON.GUI.TextBlock();
+            instructions.text = "Move w/ WASD keys, B for Samba, look with the mouse";
+            instructions.color = "white";
+            instructions.fontSize = 16;
+            instructions.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT
+            instructions.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM
+            advancedTexture.addControl(instructions);
+
+
             // Invisible borders
             var border0 = BABYLON.Mesh.CreateBox("border0", 1, scene);
             border0.scaling = new BABYLON.Vector3(1, 100, 100);
@@ -104,8 +127,8 @@
             border3.isVisible = false;
         
             // Ground
-            var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/c.png", 100, 100, 100, 0, 5, scene, false);
-            var groundMaterial = new BABYLON.StandardMaterial("ground", scene);
+            var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/c.png", 100, 100, 100, 0, -0.1, scene, false);
+            var groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
             groundMaterial.diffuseTexture = new BABYLON.Texture("textures/rock.png", scene);
 
             groundMaterial.diffuseTexture.uScale = 6;
@@ -114,8 +137,19 @@
             groundMaterial.emissiveColor = new BABYLON.Color3(0.3, 0.3, 0.3);
             ground.material = groundMaterial;
             ground.receiveShadows = true;
-            ground.checkCollisions = true;
-        
+            //ground.checkCollisions = true;
+
+            // Keyboard events
+            var inputMap = {};
+            scene.actionManager = new BABYLON.ActionManager(scene);
+            scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, function (evt) {
+                inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
+            }));
+            scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, function (evt) {
+                inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
+            }));
+
+
             ground.onReady = function () {
                 ground.optimize(100);
         
@@ -189,27 +223,29 @@
                     shadowGenerator.usePoissonSampling = true;
 
                     // Collisions
-                    camera.checkCollisions = true;
-                    camera.applyGravity = true;
+                   // camera.checkCollisions = true;
+                   // camera.applyGravity = true;
                 });
 
 
                 BABYLON.SceneLoader.ImportMesh("Rabbit", "/scenes/", "Rabbit.babylon", scene, function (newMeshes, particleSystems, skeletons) {
                     var rabbit = newMeshes[1];
-                    rabbit.scaling = new BABYLON.Vector3(0.020, 0.020, 0.020);
+                    rabbit.scaling = new BABYLON.Vector3(0.015, 0.015, 0.015);
                     rabbit.isVisible = false;
 
-                    for (var x = 0; x < 5; x++) {
+                    for (var x = 0; x < 10; x++) {
                         var rabbit_family1=rabbit.clone("rabbit_family"+x);
                         rabbit_family1.isVisible = true;
                         shadowGenerator.getShadowMap().renderList.push(rabbit_family1);
-                        rabbit_family1.position.x += 30*x;
+                        rabbit_family1.position.x = Math.random() * 20;
+                        rabbit_family1.position.y = -2.1;
+                        rabbit_family1.position.z = Math.random() * 20;
+
                         rabbit_family1.skeleton = rabbit.skeleton.clone("clonedSkeleton1");
 
                         matrix = BABYLON.Matrix.Translation(20, 276, -30*2);
                         matrix.addToSelf(BABYLON.Matrix.Scaling(.5,.5,.5));
                         idx = rabbit_family1.thinInstanceAdd(matrix);
-
                     }
 
                     //TODO: Tavşanlar düzgün dağılmıyor
@@ -218,18 +254,107 @@
                         scene.beginAnimation(sk1, 0, 73, true, 0.8);
                     }
 
-
-
-                    camera.checkCollisions = true;
-                    camera.applyGravity = true;
+                   // camera.checkCollisions = true;
+                   // camera.applyGravity = true;
 
                 });
 
+                // Load hero character
+                BABYLON.SceneLoader.ImportMesh("", "https://assets.babylonjs.com/meshes/", "HVGirl.glb", scene, function (newMeshes, particleSystems, skeletons, animationGroups) {
+                    var hero = newMeshes[0];
+
+                    //Scale the model down
+                    hero.scaling.scaleInPlace(0.1);
+
+                    //Lock camera on the character
+                    camera1.target = hero;
+
+                    //Hero character variables
+                    var heroSpeed = 0.1;
+                    var heroSpeedBackwards = 0.01;
+                    var heroRotationSpeed = 0.1;
+
+                    var animating = true;
+
+                    const walkAnim = scene.getAnimationGroupByName("Walking");
+                    const walkBackAnim = scene.getAnimationGroupByName("WalkingBack");
+                    const idleAnim = scene.getAnimationGroupByName("Idle");
+                    const sambaAnim = scene.getAnimationGroupByName("Samba");
+
+
+                    //Rendering loop (executed for everyframe)
+                    scene.onBeforeRenderObservable.add(() => {
+                        var keydown = false;
+                        //Manage the movements of the character (e.g. position, direction)
+                        if (inputMap["w"]) {
+                            hero.moveWithCollisions(hero.forward.scaleInPlace(heroSpeed));
+                            keydown = true;
+                        }
+                        if (inputMap["s"]) {
+                            hero.moveWithCollisions(hero.forward.scaleInPlace(-heroSpeedBackwards));
+                            keydown = true;
+                        }
+                        if (inputMap["a"]) {
+                            hero.rotate(BABYLON.Vector3.Up(), -heroRotationSpeed);
+                            keydown = true;
+                        }
+                        if (inputMap["d"]) {
+                            hero.rotate(BABYLON.Vector3.Up(), heroRotationSpeed);
+                            keydown = true;
+                        }
+                        if (inputMap["b"]) {
+                            keydown = true;
+                        }
+
+                        //Manage animations to be played
+                        if (keydown) {
+                            if (!animating) {
+                                animating = true;
+                                if (inputMap["s"]) {
+                                    //Walk backwards
+                                    walkBackAnim.start(true, 1.0, walkBackAnim.from, walkBackAnim.to, false);
+                                }
+                                else if
+                                (inputMap["b"]) {
+                                    //Samba!
+                                    sambaAnim.start(true, 1.0, sambaAnim.from, sambaAnim.to, false);
+                                }
+                                else {
+                                    //Walk
+                                    walkAnim.start(true, 1.0, walkAnim.from, walkAnim.to, false);
+                                }
+                            }
+                        }
+                        else {
+
+                            if (animating) {
+                                //Default animation is idle when no key is down
+                                idleAnim.start(true, 1.0, idleAnim.from, idleAnim.to, false);
+
+                                //Stop all animations besides Idle Anim when no key is down
+                                sambaAnim.stop();
+                                walkAnim.stop();
+                                walkBackAnim.stop();
+
+                                //Ensure animation are played only once per rendering loop
+                                animating = false;
+                            }
+                        }
+                    });
+                });
+
+
             }
-        
+
             return scene;
         };
-                window.initFunction = async function() {
+
+        function randomPos () {
+
+        }
+
+
+        window.initFunction = async function() {
                     
                     
                     var asyncEngineCreation = async function() {
