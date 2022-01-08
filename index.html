@@ -149,6 +149,9 @@
                 inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
             }));
 
+            var animalList = [];
+            var distanceMatrix=[];
+
 
             ground.onReady = function () {
                 ground.optimize(100);
@@ -232,20 +235,22 @@
                     var rabbit = newMeshes[1];
                     rabbit.scaling = new BABYLON.Vector3(0.015, 0.015, 0.015);
                     rabbit.isVisible = false;
-
+                    animalList.push(new BABYLON.Vector3(0, 0, 0));
                     for (var x = 0; x < 10; x++) {
                         var rabbit_family1=rabbit.clone("rabbit_family"+x);
                         rabbit_family1.isVisible = true;
                         shadowGenerator.getShadowMap().renderList.push(rabbit_family1);
-                        rabbit_family1.position.x = Math.random() * 20;
+                        rabbit_family1.position.x = Math.random() * 50;
                         rabbit_family1.position.y = -2.1;
-                        rabbit_family1.position.z = Math.random() * 20;
+                        rabbit_family1.position.z = Math.random() * 50;
 
                         rabbit_family1.skeleton = rabbit.skeleton.clone("clonedSkeleton1");
 
                         matrix = BABYLON.Matrix.Translation(20, 276, -30*2);
                         matrix.addToSelf(BABYLON.Matrix.Scaling(.5,.5,.5));
                         idx = rabbit_family1.thinInstanceAdd(matrix);
+
+                        animalList.push(new BABYLON.Vector3(rabbit_family1.position.x, rabbit_family1.position.y, rabbit_family1.position.z));
                     }
 
                     //TODO: Tavşanlar düzgün dağılmıyor
@@ -254,9 +259,21 @@
                         scene.beginAnimation(sk1, 0, 73, true, 0.8);
                     }
 
-                   // camera.checkCollisions = true;
-                   // camera.applyGravity = true;
+                   // console.log(animalList.length);
+                    //console.log(animalList);
 
+                    for (let i = 0; i < animalList.length; i++) {
+                        let tempMatrix = [];
+
+                        for (let j=1; j < animalList.length; j++) {
+                            tempMatrix.push(distanceVector(animalList[i].x, animalList[i].y, animalList[i].z, animalList[j].x, animalList[j].y, animalList[j].z));
+                        }
+                        distanceMatrix.push(tempMatrix);
+                    }
+
+
+                    // camera.checkCollisions = true;
+                   // camera.applyGravity = true;
                 });
 
                 // Load hero character
@@ -270,7 +287,7 @@
                     camera1.target = hero;
 
                     //Hero character variables
-                    var heroSpeed = 0.1;
+                    var heroSpeed = 0.3;
                     var heroSpeedBackwards = 0.01;
                     var heroRotationSpeed = 0.1;
 
@@ -343,16 +360,274 @@
                     });
                 });
 
+              //  console.log(distanceMatrix);
+
+                var button = BABYLON.GUI.Button.CreateSimpleButton("but", "Show path");
+                button.width = 0.1;
+                button.height = "40px";
+                button.color = "white";
+                button.background = "green";
+                button.top = "-400px";
+                button.left = "800px";
+                advancedTexture.addControl(button);
+
+                button.onPointerClickObservable.add(function () {
+
+                    //console.log(heldKarpSetup(distanceMatrix, 0));
+
+                    var points = [];
+                    var n = 450; // number of points
+                    var r = 10; //radius
+                    for (let i = 0; i < animalList.length; i++) {
+                        //points.push( new BABYLON.Vector3((r + (r/5)*Math.sin(8*i*Math.PI/n))* Math.sin(2*i*Math.PI/n), 1.5, (r + (r/10)*Math.sin(6*i*Math.PI/n)) * Math.cos(2*i*Math.PI/n)));
+                        points.push(new BABYLON.Vector3(animalList[i].x, 1.5, animalList[i].z ));
+                    }
+
+                    //Draw the curve
+
+                    var track = BABYLON.MeshBuilder.CreateLines('track', {points: points}, scene);
+                    track.color = new BABYLON.Color3(1, 0.5, 0.8);
+                    track.enableEdgesRendering();
+                    track.edgesWidth = 6.0;
+
+
+                 /*   var spot = new BABYLON.SpotLight("spot", new BABYLON.Vector3(25, 15, -10), new BABYLON.Vector3(-1, -0.8, 1), 15, 1, scene);
+                    spot.diffuse = new BABYLON.Color3(1, 1, 1);
+                    spot.specular = new BABYLON.Color3(0, 0, 0);
+                    spot.intensity = 0.8;
+
+                    var mat = new BABYLON.StandardMaterial("mat1", scene);
+                    mat.alpha = 1.0;
+                    mat.diffuseColor = new BABYLON.Color3(0.5, 0.5, 8.0);
+                    mat.backFaceCulling = false;
+
+                    var tube = BABYLON.Mesh.CreateTube("tube", points, 1, 4, null, 0, scene, false, BABYLON.Mesh.FRONTSIDE);
+                    tube.material = mat;
+                    tube.convertToFlatShadedMesh();*/
+
+                });
+
 
             }
-
             return scene;
         };
 
-        function randomPos () {
+
+        var incumbent1 = Infinity;
+
+        /**
+         * setup for held karp
+         * returns shortest distance from tour (distance matrix) given start
+         */
+        function heldKarpSetup(tour, start) {
+
+            // if just two cities, output distance between
+            if (tour.length == 2)
+                return tour[start][1];
+            else {
+                // create the first subset to send to main algorithm
+                // will be tour - start
+                var subset = [];
+                for (let i = 0; i < tour.length; i++) {
+                    if (i != start)
+                        subset.push(i);
+                }
+
+
+                heldKarp(tour, subset,  0);
+
+                console.log(subset);
+
+                return incumbent1;
+            }
 
         }
 
+        /**
+         * Iterative held karp dynamically programed
+         * could be optimized some
+         */
+        function heldKarp(tourDist, cities) {
+
+            // for last level of tree, will be the reduced total costs
+            // reduced meaning the costs of total paths that cause extra work are not calculated
+            var lastSubsets = false;
+
+            // generate subsets of the cities - the start
+            // ie. {}, {1}, {2}, {3}, {1,2}, {2,3}, {1,3} for 4 cities
+            var allSubsets = generateSubsets(cities);
+
+            // array that holds the subsets for each city
+            // ie. [1, {}], [2, {}], [3, {}], [2, {1}], [3, {1}], [1, {2}], [3, {2}],
+            //     [1, {3}], [2, {3}], [3, {1, 2}], [1, {2, 3}], [2, {1,3}] for 4 cities
+            var subsetCities = [];
+
+            // array that holds the costs to each subsetCity index so cost can be looked up reducing duplicate work
+            var subsetCosts = [];
+
+            // loop through all subsets
+            for (let i = 0; i < allSubsets.length; i++) {
+                // loop through cities remaining after removing start
+                for (let j = cities[0]; j <= cities.length; j++) {
+                    if (!elementOf(j, allSubsets[i])) {
+                        subsetCities.push([j, allSubsets[i]]);
+
+                        // calculating the base subsets [1, {}], [2, {}], [3, {}] for 4 cities
+                        if (allSubsets[i].length == 0) {
+                            subsetCosts.push(tourDist[i][j]);
+                        }
+                        // calculating the next base since dont have to loop yet [2, {1}], [3, {1}], [1, {2}], [3, {2}],
+                        //     													 [1, {3}], [2, {3}] for 4 cities
+                        if (allSubsets[i].length == 1) {
+                            subsetCosts.push(tourDist[allSubsets[i][0]][j] + subsetCosts[allSubsets[i] - 1]);
+                        }
+
+                        // tricky party here [3, {1, 2}], [1, {2, 3}], [2, {1,3}] for 4 cities... this is where more cities will take lots of time
+                        if (allSubsets[i].length > 1) {
+                            // holds arrays to get the minimum from ie [3, {1, 2}] must use min value between subset [1, {2}] and [2, {1}] already calculated
+                            var toGetMin = [];
+                            // loop through specific subset
+                            for (let x = 0; x < allSubsets[i].length; x++) {
+                                // placeholder array so all elements in subset are accounted for (> 4 cities important here)
+                                var test = [];
+                                // loop through values in subset to acertain values to take min of
+                                for (let y = allSubsets[i].length; y > 0; y--) {
+
+                                    if (allSubsets[i][x] != allSubsets[i][y-1]) {
+                                        toGetMin.push(allSubsets[i][x]);
+                                        test.push(allSubsets[i][y-1]);
+
+                                        toGetMin.push(test.sort(function(a, b){return a - b}));
+                                    }
+                                }
+                            }
+                            // this loop could probably be done a different way to save time as it organizes toGetMin to make next part easier
+                            var a = [];
+                            for (let x = 1; x < toGetMin.length; x+=2){
+                                a.push([toGetMin[x-1], toGetMin[x]]);
+                            }
+
+                            // holds the value of the sums from each subset to take the minimum value from
+                            var sumsToMin = [];
+
+                            // loop through the organized subset lookups
+                            for (let x = 0; x < a.length; x++) {
+
+                                // if checking the last subsets remember the values
+                                if (a[x][1].length == cities.length -2){
+                                    lastSubsets = true;
+                                }
+                                else {
+                                    lastSubsets = false;
+                                }
+
+                                // loop through the subsets the need to be looked up
+                                // only aplicatble when values are > 2 ... ie for subset [1, {2,3,4}] {2,3,4} > 2 values
+                                for (let z = 0; z < a[x][1].length; z++) {
+                                    // what subset to add to what distance lookup before taking minimum
+                                    // 		ie for 4 cities subset [3, {1, 2}] = distMatrix[1][3] + lookup value for [1, {2}]
+                                    // 		then next loop of x = distMatrix[2][3] + lookup value for [2, {1}]
+                                    if (a[x][1].length == 1) {
+                                        sumsToMin.push(subsetCosts[searchForCost(a[x], subsetCities)] + tourDist[a[x][z]][j]);
+                                    }
+                                    else {
+                                        sumsToMin.push(subsetCosts[searchForCost(a[x], subsetCities)] + tourDist[a[x][1][z]][j]);
+                                    }
+                                }
+                            }
+
+                            // take min of the sums of each subset
+                            cost = min(sumsToMin);
+                            // push to subsetCities cost placeholder
+                            subsetCosts.push(cost);
+
+                            // if last subsets then compare total costs to determine minimum
+                            if (cost < incumbent1 && lastSubsets) {
+                                incumbent1 = cost;
+                            }
+                        }
+                    }
+                }
+            }
+
+            console.log(subsetCities);
+            console.log(subsetCosts);
+            return incumbent1;
+        }
+
+        /**
+         * returns subsets of array
+         * used code from Angelos Chalaris - StackOverflow.com
+         */
+        function generateSubsets(array) {
+            var result = [];
+            result.push([]);
+
+            for (var i = 1; i < (1 << array.length ); i++) {
+                var subset = [];
+                for (var j = 0; j < array.length ; j++)
+                    if (i & (1 << j))
+                        subset.push(array[j]);
+
+                result.push(subset);
+            }
+
+            // pop the last subset that would be used for going back to start since directions say
+            // not to include returning to start
+            result.pop();
+            // probably better to do this in the looping above but this was easiest for me and works the same
+
+            return result;
+        }
+
+        /**
+         * return the element for cost of subset in subsetcities
+         * return -1 if subset does not exist
+         */
+        function searchForCost(subset, subsetCities) {
+            for (let i = 0; i < subsetCities.length; i++) {
+                if (JSON.stringify(subset)==JSON.stringify(subsetCities[i]))
+                    return i;
+            }
+
+            return -1;
+        }
+
+        /**
+         * returns true if a is an element of b
+         * false otherwise
+         */
+        function elementOf(a, b) {
+            for (let i = 0; i < b.length; i++){
+                if (a == b[i])
+                    return true;
+            }
+
+            return false;
+        }
+
+        /**
+         * returns the minimum value in arr
+         */
+        function min(arr) {
+            var min = Infinity;
+
+            for (let i =0; i< arr.length; i++) {
+                if (arr[i] < min)
+                    min = arr[i];
+            }
+
+            return min;
+        }
+
+        function distanceVector( x1,y1,z1, x2,y2,z2 )
+        {
+            var dx = x1 - x2;
+            var dy = y1 - y2;
+            var dz = z1 - z2;
+
+            return Math.sqrt( dx * dx + dy * dy + dz * dz );
+        }
 
         window.initFunction = async function() {
                     
