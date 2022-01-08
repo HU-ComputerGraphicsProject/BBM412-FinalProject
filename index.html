@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+        <title>Babylon.js sample code</title>
+
+        <!-- Babylon.js -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+        <script src="https://preview.babylonjs.com/ammo.js"></script>
+        <script src="https://preview.babylonjs.com/cannon.js"></script>
+        <script src="https://preview.babylonjs.com/Oimo.js"></script>
+        <script src="https://preview.babylonjs.com/earcut.min.js"></script>
+        <script src="https://preview.babylonjs.com/babylon.js"></script>
+        <script src="https://preview.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+        <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
+        <script src="https://preview.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+        <script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+        <script src="https://preview.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+        <script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
+        <script src="https://preview.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+
+        <style>
+            html, body {
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            #renderCanvas {
+                width: 100%;
+                height: 100%;
+                touch-action: none;
+            }
+        </style>
+    </head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+
+        var engine = null;
+        var scene = null;
+        var sceneToRender = null;
+        var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
+        var coordSystem=function(b){var g=b.normalize();b=0==Math.abs(b.x)&&0==Math.abs(b.y)?(new BABYLON.Vector3(b.z,0,0)).normalize():(new BABYLON.Vector3(b.y,-b.x,0)).normalize();var r=BABYLON.Vector3.Cross(b,g);return{x:b,y:g,z:r}},randPct=function(b,g){return 0==g?b:(1+(1-2*Math.random())*g)*b},createBranch=function(b,g,r,w,h,l,v,n,x){for(var t=[],d,c=[],f,q=[],a=0;12>a;a++)t[a]=[];for(var m=0;m<h;m++)for(a=m/h,d=g.y.scale(a*r),d.addInPlace(g.x.scale(v*Math.exp(-a)*Math.sin(l*a*Math.PI))),d.addInPlace(b),c[m]=d,d=n*(1+(.4*Math.random()-.2))*(1-(1-w)*a),q.push(d),a=0;12>a;a++)f=a*Math.PI/6,f=g.x.scale(d*Math.cos(f)).add(g.z.scale(d*Math.sin(f))),f.addInPlace(c[m]),t[a].push(f);for(a=0;12>a;a++)t[a].push(c[c.length-1]);return{branch:BABYLON.MeshBuilder.CreateRibbon("branch",{pathArray:t,closeArray:!0},x),core:c,_radii:q}},createTreeBase=function(b,g,r,w,h,l,v,n,x,t){var d=2/(1+Math.sqrt(5)),c=new BABYLON.Vector3(0,1,0),f,c=coordSystem(c),q=new BABYLON.Vector3(0,0,0),a=[],m=[],e=[],A=[],q=createBranch(q,c,b,g,r,1,x,1,t);a.push(q.branch);var y=q.core;m.push(y);e.push(q._radii);A.push(c);for(var q=y[y.length-1],y=2*Math.PI/h,z,u,p,C,B=0;B<h;B++)if(f=randPct(B*y,.25),f=c.y.scale(Math.cos(randPct(l,.15))).add(c.x.scale(Math.sin(randPct(l,.15))*Math.sin(f))).add(c.z.scale(Math.sin(randPct(l,.15))*Math.cos(f))),z=coordSystem(f),f=createBranch(q,z,b*v,g,r,n,x*d,g,t),p=f.core,p=p[p.length-1],a.push(f.branch),m.push(f.core),e.push(f._radii),A.push(z),1<w)for(var D=0;D<h;D++)u=randPct(D*y,.25),u=z.y.scale(Math.cos(randPct(l,.15))).add(z.x.scale(Math.sin(randPct(l,.15))*Math.sin(u))).add(z.z.scale(Math.sin(randPct(l,.15))*Math.cos(u))),u=coordSystem(u),C=createBranch(p,u,b*v*v,g,r,n,x*d*d,g*g,t),a.push(C.branch),m.push(C.core),e.push(f._radii),A.push(u);return{tree:BABYLON.Mesh.MergeMeshes(a),paths:m,radii:e,directions:A}},createTree=function(b,g,r,w,h,l,v,n,x,t,d,c,f,q,a,m){1!=h&&2!=h&&(h=1);var e=createTreeBase(b,g,r,h,l,v,n,d,c,m);e.tree.material=w;var A=b*Math.pow(n,h),y=A/(2*f),z=1.5*Math.pow(g,h-1);n=BABYLON.MeshBuilder.CreateDisc("leaf",{radius:z/2,tessellation:12,sideOrientation:BABYLON.Mesh.DOUBLESIDE},m);b=new BABYLON.SolidParticleSystem("leaveSPS",m,{updatable:!1});b.addShape(n,2*f*Math.pow(l,h),{positionFunction:function(b,a,g){a=Math.floor(g/(2*f));1==h?a++:a=2+a%l+Math.floor(a/l)*(l+1);var E=(g%(2*f)*y+3*y/2)/A,d=Math.ceil(r*E);d>e.paths[a].length-1&&(d=e.paths[a].length-1);var k=d-1,c=k/(r-1),m=d/(r-1);b.position=new BABYLON.Vector3(e.paths[a][k].x+(e.paths[a][d].x-e.paths[a][k].x)*(E-c)/(m-c),e.paths[a][k].y+(e.paths[a][d].y-e.paths[a][k].y)*(E-c)/(m-c)+(.6*z/q+e.radii[a][d])*(g%2*2-1),e.paths[a][k].z+(e.paths[a][d].z-e.paths[a][k].z)*(E-c)/(m-c));b.rotation.z=Math.random()*Math.PI/4;b.rotation.y=Math.random()*Math.PI/2;b.rotation.z=Math.random()*Math.PI/4;b.scale.y=1/q}});b=b.buildMesh();b.billboard=!0;n.dispose();d=new BABYLON.SolidParticleSystem("miniSPS",m,{updatable:!1});n=new BABYLON.SolidParticleSystem("minileavesSPS",m,{updatable:!1});var u=[];c=2*Math.PI/l;for(var p=0;p<Math.pow(l,h+1);p++)u.push(randPct(Math.floor(p/Math.pow(l,h))*c,.2));c=function(a,b,d){var c=d%Math.pow(l,h);1==h?c++:c=2+c%l+Math.floor(c/l)*(l+1);var f=e.directions[c],c=new BABYLON.Vector3(e.paths[c][e.paths[c].length-1].x,e.paths[c][e.paths[c].length-1].y,e.paths[c][e.paths[c].length-1].z),k=u[d],k=f.y.scale(Math.cos(randPct(v,0))).add(f.x.scale(Math.sin(randPct(v,0))*Math.sin(k))).add(f.z.scale(Math.sin(randPct(v,0))*Math.cos(k))),f=BABYLON.Vector3.Cross(BABYLON.Axis.Y,k),k=Math.acos(BABYLON.Vector3.Dot(k,BABYLON.Axis.Y)/k.length());a.scale=new BABYLON.Vector3(Math.pow(g,h+1),Math.pow(g,h+1),Math.pow(g,h+1));a.quaternion=BABYLON.Quaternion.RotationAxis(f,k);a.position=c;};for(var C=[],B=[],p=e.paths.length,D=e.paths[0].length,F=0;F<x;F++)C.push(2*Math.PI*Math.random()-Math.PI),B.push([Math.floor(Math.random()*p),Math.floor(Math.random()*(D-1)+1)]);p=function(a,c,b){var d=B[b][0],f=B[b][1],k=e.directions[d];c=new BABYLON.Vector3(e.paths[d][f].x,e.paths[d][f].y,e.paths[d][f].z);c.addInPlace(k.z.scale(e.radii[d][f]/2));b=C[b];k=k.y.scale(Math.cos(randPct(t,0))).add(k.x.scale(Math.sin(randPct(t,0))*Math.sin(b))).add(k.z.scale(Math.sin(randPct(t,0))*Math.cos(b)));b=BABYLON.Vector3.Cross(BABYLON.Axis.Y,k);k=Math.acos(BABYLON.Vector3.Dot(k,BABYLON.Axis.Y)/k.length());a.scale=new BABYLON.Vector3(Math.pow(g,h+1),Math.pow(g,h+1),Math.pow(g,h+1));a.quaternion=BABYLON.Quaternion.RotationAxis(b,k);a.position=c};d.addShape(e.tree,Math.pow(l,h+1),{positionFunction:c});d.addShape(e.tree,x,{positionFunction:p});d=d.buildMesh();d.material=w;n.addShape(b,Math.pow(l,h+1),{positionFunction:c});n.addShape(b,x,{positionFunction:p});w=n.buildMesh();b.dispose();w.material=a;a=BABYLON.MeshBuilder.CreateBox("",{},m);a.isVisible=!1;e.tree.parent=a;d.parent=a;return w.parent=a};
+
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+            var light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, -1, -0.3), scene);
+            var camera = new BABYLON.FreeCamera("Camera", new BABYLON.Vector3(0, 5, -20), scene);
+            camera.speed = 0.4;
+        
+            camera.attachControl(canvas, true);
+        
+            light.position = new BABYLON.Vector3(20, 60, 30);
+        
+            scene.ambientColor = BABYLON.Color3.FromInts(10, 30, 10);
+            scene.clearColor = BABYLON.Color3.FromInts(135, 206, 250);
+            scene.gravity = new BABYLON.Vector3(0, -0.5, 0);
+        
+            // Fog
+            scene.fogMode = BABYLON.Scene.FOGMODE_EXP;
+            scene.fogDensity = 0.02;
+            scene.fogColor = scene.clearColor;
+        
+            // Skybox
+            var skybox = BABYLON.Mesh.CreateBox("skyBox", 150.0, scene);
+            var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
+            skyboxMaterial.backFaceCulling = false;
+            skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture("textures/skybox", scene);
+            skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+            skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+            skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+            skyboxMaterial.disableLighting = true;
+            skybox.material = skyboxMaterial;
+            skybox.infiniteDistance = true;
+        
+            // Invisible borders
+            var border0 = BABYLON.Mesh.CreateBox("border0", 1, scene);
+            border0.scaling = new BABYLON.Vector3(1, 100, 100);
+            border0.position.x = -50.0;
+            border0.checkCollisions = true;
+            border0.isVisible = false;
+        
+            var border1 = BABYLON.Mesh.CreateBox("border1", 1, scene);
+            border1.scaling = new BABYLON.Vector3(1, 100, 100);
+            border1.position.x = 50.0;
+            border1.checkCollisions = true;
+            border1.isVisible = false;
+        
+            var border2 = BABYLON.Mesh.CreateBox("border2", 1, scene);
+            border2.scaling = new BABYLON.Vector3(100, 100, 1);
+            border2.position.z = 50.0;
+            border2.checkCollisions = true;
+            border2.isVisible = false;
+        
+            var border3 = BABYLON.Mesh.CreateBox("border3", 1, scene);
+            border3.scaling = new BABYLON.Vector3(100, 100, 1);
+            border3.position.z = -50.0;
+            border3.checkCollisions = true;
+            border3.isVisible = false;
+        
+            // Ground
+            var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/c.png", 100, 100, 100, 0, 5, scene, false);
+            var groundMaterial = new BABYLON.StandardMaterial("ground", scene);
+            groundMaterial.diffuseTexture = new BABYLON.Texture("textures/rock.png", scene);
+
+            groundMaterial.diffuseTexture.uScale = 6;
+            groundMaterial.diffuseTexture.vScale = 6;
+            groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+            groundMaterial.emissiveColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+            ground.material = groundMaterial;
+            ground.receiveShadows = true;
+            ground.checkCollisions = true;
+        
+            ground.onReady = function () {
+                ground.optimize(100);
+        
+                // Shadows
+                var shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
+        
+                // Trees
+
+                //leaf material
+                var green = new BABYLON.StandardMaterial("green", scene);
+                green.diffuseColor = new BABYLON.Color3(0,1,0);
+
+                //trunk and branch material
+                var bark = new BABYLON.StandardMaterial("bark", scene);
+                bark.emissiveTexture = new BABYLON.Texture("https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Bark_texture_wood.jpg/800px-Bark_texture_wood.jpg", scene);
+                bark.diffuseTexture = new BABYLON.Texture("https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Bark_texture_wood.jpg/800px-Bark_texture_wood.jpg", scene);
+                bark.diffuseTexture.uScale = 2.0;//Repeat 5 times on the Vertical Axes
+                bark.diffuseTexture.vScale = 2.0;//Repeat 5 times on the Horizontal Axes
+
+                //Tree parameters
+                var trunk_height = 10;
+                var trunk_taper = 0.5;
+                var trunk_slices = 5;
+                var boughs = 2; // 1 or 2
+                var forks = 4;
+                var fork_angle = Math.PI/4;
+                var fork_ratio = 2/(1+Math.sqrt(3)); //PHI the golden ratio
+                var branch_angle = Math.PI/3;
+                var bow_freq = 1;
+                var bow_height = 1.5;
+                var branches = 5;
+                var leaves_on_branch = 5;
+                var leaf_wh_ratio = 0.5;
+
+
+                //Create Trees
+                BABYLON.SceneLoader.ImportMesh("", "//www.babylonjs.com/assets/Tree/", "tree.babylon", scene, function (newMeshes) {
+                    newMeshes[0].material.opacityTexture = null;
+                    newMeshes[0].material.backFaceCulling = false;
+                    newMeshes[0].isVisible = false;
+                    newMeshes[0].position.y = ground.getHeightAtCoordinates(0, 0); // Getting height from ground object
+                    shadowGenerator.getShadowMap().renderList.push(newMeshes[0]);
+                    var range = 60;
+                    var count = 100;
+                    for (var index = 0; index < count; index++) {
+                        var newInstance = newMeshes[0].createInstance("i" + index);
+                        var x = range / 2 - Math.random() * range;
+                        var z = range / 2 - Math.random() * range;
+        
+                        var y = ground.getHeightAtCoordinates(x, z); // Getting height from ground object
+                        newInstance.position = new BABYLON.Vector3(x, y, z);
+                        newInstance.rotate(BABYLON.Axis.Y, Math.random() * Math.PI * 2, BABYLON.Space.WORLD);
+                        var scale = 0.5 + Math.random() * 2;
+                        newInstance.scaling.addInPlace(new BABYLON.Vector3(scale, scale, scale));
+
+                        shadowGenerator.getShadowMap().renderList.push(newInstance);
+                    }
+
+                    //SPS Tree Generator
+                    for (let i = 0; i <10 ; i++) {
+                        var tree = createTree(trunk_height, trunk_taper, trunk_slices, bark, boughs, forks, fork_angle, fork_ratio, branches, branch_angle, bow_freq, bow_height, leaves_on_branch, leaf_wh_ratio, green, scene);
+                        var x = range / 2 - Math.random() * range;
+                        var z = range / 2 - Math.random() * range;
+                        var y = ground.getHeightAtCoordinates(x, z);
+                        //TODO:Ağaçları küçült ya da hazırları büyült
+                        //tree.scale=new BABYLON.Vector3(0.020, 0.020, 0.020);
+                        tree.position=new BABYLON.Vector3(x, y, z) ;
+                    }
+
+                    shadowGenerator.getShadowMap().refreshRate = 0; // We need to compute it just once
+                    shadowGenerator.usePoissonSampling = true;
+
+                    // Collisions
+                    camera.checkCollisions = true;
+                    camera.applyGravity = true;
+                });
+
+
+                BABYLON.SceneLoader.ImportMesh("Rabbit", "/scenes/", "Rabbit.babylon", scene, function (newMeshes, particleSystems, skeletons) {
+                    var rabbit = newMeshes[1];
+                    rabbit.scaling = new BABYLON.Vector3(0.020, 0.020, 0.020);
+                    rabbit.isVisible = false;
+
+                    for (var x = 0; x < 5; x++) {
+                        var rabbit_family1=rabbit.clone("rabbit_family"+x);
+                        rabbit_family1.isVisible = true;
+                        shadowGenerator.getShadowMap().renderList.push(rabbit_family1);
+                        rabbit_family1.position.x += 30*x;
+                        rabbit_family1.skeleton = rabbit.skeleton.clone("clonedSkeleton1");
+
+                        matrix = BABYLON.Matrix.Translation(20, 276, -30*2);
+                        matrix.addToSelf(BABYLON.Matrix.Scaling(.5,.5,.5));
+                        idx = rabbit_family1.thinInstanceAdd(matrix);
+
+                    }
+
+                    //TODO: Tavşanlar düzgün dağılmıyor
+                    for (let i = 0; i <5; i++) {
+                        let sk1 = scene.getNodeByName("rabbit_family"+i).skeleton;
+                        scene.beginAnimation(sk1, 0, 73, true, 0.8);
+                    }
+
+
+
+                    camera.checkCollisions = true;
+                    camera.applyGravity = true;
+
+                });
+
+            }
+        
+            return scene;
+        };
+                window.initFunction = async function() {
+                    
+                    
+                    var asyncEngineCreation = async function() {
+                        try {
+                        return createDefaultEngine();
+                        } catch(e) {
+                        console.log("the available createEngine function failed. Creating the default engine instead");
+                        return createDefaultEngine();
+                        }
+                    }
+
+                    window.engine = await asyncEngineCreation();
+        if (!engine) throw 'engine should not be null.';
+        window.scene = createScene();};
+        initFunction().then(() => {sceneToRender = scene        
+            engine.runRenderLoop(function () {
+                if (sceneToRender && sceneToRender.activeCamera) {
+                    sceneToRender.render();
+                }
+            });
+        });
+
+        // Resize
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+    </script>
+</body>
+</html>
