@@ -49,23 +49,35 @@
 
         var createScene = function () {
             var scene = new BABYLON.Scene(engine);
-            var light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, -1, -0.3), scene);
+            /*var light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, -1, -0.3), scene);
             var camera = new BABYLON.FreeCamera("Camera", new BABYLON.Vector3(0, 5, -20), scene);
             camera.speed = 0.4;
         
             camera.attachControl(canvas, true);
         
             light.position = new BABYLON.Vector3(20, 60, 30);
-        
+        */
+
+            var camera1 = new BABYLON.ArcRotateCamera("camera1", Math.PI / 2, Math.PI / 4, 10, new BABYLON.Vector3(0, -5, 0), scene);
+            scene.activeCamera = camera1;
+            scene.activeCamera.attachControl(canvas, true);
+            camera1.lowerRadiusLimit = 2;
+            camera1.upperRadiusLimit = 10;
+            camera1.wheelDeltaPercentage = 0.01;
+
+            var light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, -0.5, -1.0), scene);
+            light.position = new BABYLON.Vector3(0, 5, 5);
+
+
             scene.ambientColor = BABYLON.Color3.FromInts(10, 30, 10);
             scene.clearColor = BABYLON.Color3.FromInts(135, 206, 250);
-            scene.gravity = new BABYLON.Vector3(0, -0.5, 0);
+            scene.gravity = new BABYLON.Vector3(0, -9.8, 0);
         
             // Fog
-            scene.fogMode = BABYLON.Scene.FOGMODE_EXP;
-            scene.fogDensity = 0.02;
-            scene.fogColor = scene.clearColor;
-        
+          //  scene.fogMode = BABYLON.Scene.FOGMODE_EXP;
+          //  scene.fogDensity = 0.02;
+          //   scene.fogColor = scene.clearColor;
+
             // Skybox
             var skybox = BABYLON.Mesh.CreateBox("skyBox", 150.0, scene);
             var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
@@ -77,7 +89,18 @@
             skyboxMaterial.disableLighting = true;
             skybox.material = skyboxMaterial;
             skybox.infiniteDistance = true;
-        
+
+            // GUI
+            var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+            var instructions = new BABYLON.GUI.TextBlock();
+            instructions.text = "Move w/ WASD keys, B for Samba, look with the mouse";
+            instructions.color = "white";
+            instructions.fontSize = 16;
+            instructions.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT
+            instructions.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM
+            advancedTexture.addControl(instructions);
+
+
             // Invisible borders
             var border0 = BABYLON.Mesh.CreateBox("border0", 1, scene);
             border0.scaling = new BABYLON.Vector3(1, 100, 100);
@@ -104,8 +127,8 @@
             border3.isVisible = false;
         
             // Ground
-            var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/c.png", 100, 100, 100, 0, 5, scene, false);
-            var groundMaterial = new BABYLON.StandardMaterial("ground", scene);
+            var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/c.png", 100, 100, 100, 0, -0.1, scene, false);
+            var groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
             groundMaterial.diffuseTexture = new BABYLON.Texture("textures/rock.png", scene);
 
             groundMaterial.diffuseTexture.uScale = 6;
@@ -114,8 +137,19 @@
             groundMaterial.emissiveColor = new BABYLON.Color3(0.3, 0.3, 0.3);
             ground.material = groundMaterial;
             ground.receiveShadows = true;
-            ground.checkCollisions = true;
-        
+            //ground.checkCollisions = true;
+
+            // Keyboard events
+            var inputMap = {};
+            scene.actionManager = new BABYLON.ActionManager(scene);
+            scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, function (evt) {
+                inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
+            }));
+            scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, function (evt) {
+                inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
+            }));
+
+
             ground.onReady = function () {
                 ground.optimize(100);
         
@@ -189,27 +223,29 @@
                     shadowGenerator.usePoissonSampling = true;
 
                     // Collisions
-                    camera.checkCollisions = true;
-                    camera.applyGravity = true;
+                   // camera.checkCollisions = true;
+                   // camera.applyGravity = true;
                 });
 
 
                 BABYLON.SceneLoader.ImportMesh("Rabbit", "/scenes/", "Rabbit.babylon", scene, function (newMeshes, particleSystems, skeletons) {
                     var rabbit = newMeshes[1];
-                    rabbit.scaling = new BABYLON.Vector3(0.020, 0.020, 0.020);
+                    rabbit.scaling = new BABYLON.Vector3(0.015, 0.015, 0.015);
                     rabbit.isVisible = false;
 
-                    for (var x = 0; x < 5; x++) {
+                    for (var x = 0; x < 10; x++) {
                         var rabbit_family1=rabbit.clone("rabbit_family"+x);
                         rabbit_family1.isVisible = true;
                         shadowGenerator.getShadowMap().renderList.push(rabbit_family1);
-                        rabbit_family1.position.x += 30*x;
+                        rabbit_family1.position.x = Math.random() * 20;
+                        rabbit_family1.position.y = -2.1;
+                        rabbit_family1.position.z = Math.random() * 20;
+
                         rabbit_family1.skeleton = rabbit.skeleton.clone("clonedSkeleton1");
 
                         matrix = BABYLON.Matrix.Translation(20, 276, -30*2);
                         matrix.addToSelf(BABYLON.Matrix.Scaling(.5,.5,.5));
                         idx = rabbit_family1.thinInstanceAdd(matrix);
-
                     }
 
                     //TODO: Tavşanlar düzgün dağılmıyor
@@ -218,18 +254,107 @@
                         scene.beginAnimation(sk1, 0, 73, true, 0.8);
                     }
 
-
-
-                    camera.checkCollisions = true;
-                    camera.applyGravity = true;
+                   // camera.checkCollisions = true;
+                   // camera.applyGravity = true;
 
                 });
 
+                // Load hero character
+                BABYLON.SceneLoader.ImportMesh("", "https://assets.babylonjs.com/meshes/", "HVGirl.glb", scene, function (newMeshes, particleSystems, skeletons, animationGroups) {
+                    var hero = newMeshes[0];
+
+                    //Scale the model down
+                    hero.scaling.scaleInPlace(0.1);
+
+                    //Lock camera on the character
+                    camera1.target = hero;
+
+                    //Hero character variables
+                    var heroSpeed = 0.1;
+                    var heroSpeedBackwards = 0.01;
+                    var heroRotationSpeed = 0.1;
+
+                    var animating = true;
+
+                    const walkAnim = scene.getAnimationGroupByName("Walking");
+                    const walkBackAnim = scene.getAnimationGroupByName("WalkingBack");
+                    const idleAnim = scene.getAnimationGroupByName("Idle");
+                    const sambaAnim = scene.getAnimationGroupByName("Samba");
+
+
+                    //Rendering loop (executed for everyframe)
+                    scene.onBeforeRenderObservable.add(() => {
+                        var keydown = false;
+                        //Manage the movements of the character (e.g. position, direction)
+                        if (inputMap["w"]) {
+                            hero.moveWithCollisions(hero.forward.scaleInPlace(heroSpeed));
+                            keydown = true;
+                        }
+                        if (inputMap["s"]) {
+                            hero.moveWithCollisions(hero.forward.scaleInPlace(-heroSpeedBackwards));
+                            keydown = true;
+                        }
+                        if (inputMap["a"]) {
+                            hero.rotate(BABYLON.Vector3.Up(), -heroRotationSpeed);
+                            keydown = true;
+                        }
+                        if (inputMap["d"]) {
+                            hero.rotate(BABYLON.Vector3.Up(), heroRotationSpeed);
+                            keydown = true;
+                        }
+                        if (inputMap["b"]) {
+                            keydown = true;
+                        }
+
+                        //Manage animations to be played
+                        if (keydown) {
+                            if (!animating) {
+                                animating = true;
+                                if (inputMap["s"]) {
+                                    //Walk backwards
+                                    walkBackAnim.start(true, 1.0, walkBackAnim.from, walkBackAnim.to, false);
+                                }
+                                else if
+                                (inputMap["b"]) {
+                                    //Samba!
+                                    sambaAnim.start(true, 1.0, sambaAnim.from, sambaAnim.to, false);
+                                }
+                                else {
+                                    //Walk
+                                    walkAnim.start(true, 1.0, walkAnim.from, walkAnim.to, false);
+                                }
+                            }
+                        }
+                        else {
+
+                            if (animating) {
+                                //Default animation is idle when no key is down
+                                idleAnim.start(true, 1.0, idleAnim.from, idleAnim.to, false);
+
+                                //Stop all animations besides Idle Anim when no key is down
+                                sambaAnim.stop();
+                                walkAnim.stop();
+                                walkBackAnim.stop();
+
+                                //Ensure animation are played only once per rendering loop
+                                animating = false;
+                            }
+                        }
+                    });
+                });
+
+
             }
-        
+
             return scene;
         };
-                window.initFunction = async function() {
+
+        function randomPos () {
+
+        }
+
+
+        window.initFunction = async function() {
                     
                     
                     var asyncEngineCreation = async function() {
