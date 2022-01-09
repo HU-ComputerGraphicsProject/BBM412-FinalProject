@@ -1,5 +1,5 @@
 var incumbent1 = Infinity;
-
+var finalPath = [];
 /**
  * setup for held karp
  * returns shortest distance from tour (distance matrix) given start
@@ -18,7 +18,7 @@ function heldKarpSetup(tour, start) {
                 subset.push(i);
         }
         heldKarp(tour, subset,  0);
-        return incumbent1;
+        return finalPath;
     }
 }
 
@@ -137,8 +137,6 @@ function heldKarp(tourDist, cities) {
             whichPath = i;
         }
     }
-    var finalPath = [];
-
     finalPath.push(0);
     finalPath.push(subsetCities[whichPath][0]);
     for (let i = 0; i < subsetCities[whichPath][1].length; i++) {
@@ -148,7 +146,7 @@ function heldKarp(tourDist, cities) {
 
     //console.log(subsetCities[whichPath]);
 
-    //console.log(finalPath);
+    //console.log("finalPath   " + finalPath);
     // console.log(subsetCosts);
 
     return finalPath;
