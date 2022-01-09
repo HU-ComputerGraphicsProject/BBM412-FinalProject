@@ -181,7 +181,7 @@
                 var leaves_on_branch = 5;
                 var leaf_wh_ratio = 0.5;
 
-/*
+
                 //Create Trees
                 BABYLON.SceneLoader.ImportMesh("", "//www.babylonjs.com/assets/Tree/", "tree.babylon", scene, function (newMeshes) {
                     newMeshes[0].material.opacityTexture = null;
@@ -223,7 +223,7 @@
                    // camera.checkCollisions = true;
                    // camera.applyGravity = true;
                 });
-*/
+
 
                 BABYLON.SceneLoader.ImportMesh("Rabbit", "/scenes/", "Rabbit.babylon", scene, function (newMeshes, particleSystems, skeletons) {
                     var rabbit = newMeshes[1];
@@ -364,27 +364,20 @@
                 advancedTexture.addControl(button);
 
                 button.onPointerClickObservable.add(function () {
-                   // console.log(distanceMatrix);
                     var finalPath =  heldKarpSetup(distanceMatrix, 0);
 
-                    let newArr = [];
-                    console.log(finalPath);
+                    var newArr = [];
                     for (let i=0; i < finalPath.length; i++) {
                         newArr.push(animalList[finalPath[i]]);
                         console.log("new  " + newArr);
                     }
-                    console.log(newArr);
 
                     var points = [];
-                     var n = 450; // number of points
-                     var r = 10; //radius
                      for (let i = 0; i < animalList.length; i++) {
-                         //points.push( new BABYLON.Vector3((r + (r/5)*Math.sin(8*i*Math.PI/n))* Math.sin(2*i*Math.PI/n), 1.5, (r + (r/10)*Math.sin(6*i*Math.PI/n)) * Math.cos(2*i*Math.PI/n)));
-                         points.push(new BABYLON.Vector3(animalList[i].x, 1.5, animalList[i].z ));
+                         points.push(new BABYLON.Vector3(newArr[i].x, 1.5, newArr[i].z ));
                      }
 
                      //Draw the curve
-
                      var track = BABYLON.MeshBuilder.CreateLines('track', {points: points}, scene);
                      track.color = new BABYLON.Color3(1, 0.5, 0.8);
                      track.enableEdgesRendering();

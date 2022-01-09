@@ -137,8 +137,6 @@ function heldKarp(tourDist, cities) {
             whichPath = i;
         }
     }
-    var finalPath = [];
-
     finalPath.push(0);
     finalPath.push(subsetCities[whichPath][0]);
     for (let i = 0; i < subsetCities[whichPath][1].length; i++) {
