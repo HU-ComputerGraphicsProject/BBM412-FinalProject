@@ -49,9 +49,9 @@
         var sceneToRender = null;
         var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
         var coordSystem=function(b){var g=b.normalize();b=0==Math.abs(b.x)&&0==Math.abs(b.y)?(new BABYLON.Vector3(b.z,0,0)).normalize():(new BABYLON.Vector3(b.y,-b.x,0)).normalize();var r=BABYLON.Vector3.Cross(b,g);return{x:b,y:g,z:r}},randPct=function(b,g){return 0==g?b:(1+(1-2*Math.random())*g)*b},createBranch=function(b,g,r,w,h,l,v,n,x){for(var t=[],d,c=[],f,q=[],a=0;12>a;a++)t[a]=[];for(var m=0;m<h;m++)for(a=m/h,d=g.y.scale(a*r),d.addInPlace(g.x.scale(v*Math.exp(-a)*Math.sin(l*a*Math.PI))),d.addInPlace(b),c[m]=d,d=n*(1+(.4*Math.random()-.2))*(1-(1-w)*a),q.push(d),a=0;12>a;a++)f=a*Math.PI/6,f=g.x.scale(d*Math.cos(f)).add(g.z.scale(d*Math.sin(f))),f.addInPlace(c[m]),t[a].push(f);for(a=0;12>a;a++)t[a].push(c[c.length-1]);return{branch:BABYLON.MeshBuilder.CreateRibbon("branch",{pathArray:t,closeArray:!0},x),core:c,_radii:q}},createTreeBase=function(b,g,r,w,h,l,v,n,x,t){var d=2/(1+Math.sqrt(5)),c=new BABYLON.Vector3(0,1,0),f,c=coordSystem(c),q=new BABYLON.Vector3(0,0,0),a=[],m=[],e=[],A=[],q=createBranch(q,c,b,g,r,1,x,1,t);a.push(q.branch);var y=q.core;m.push(y);e.push(q._radii);A.push(c);for(var q=y[y.length-1],y=2*Math.PI/h,z,u,p,C,B=0;B<h;B++)if(f=randPct(B*y,.25),f=c.y.scale(Math.cos(randPct(l,.15))).add(c.x.scale(Math.sin(randPct(l,.15))*Math.sin(f))).add(c.z.scale(Math.sin(randPct(l,.15))*Math.cos(f))),z=coordSystem(f),f=createBranch(q,z,b*v,g,r,n,x*d,g,t),p=f.core,p=p[p.length-1],a.push(f.branch),m.push(f.core),e.push(f._radii),A.push(z),1<w)for(var D=0;D<h;D++)u=randPct(D*y,.25),u=z.y.scale(Math.cos(randPct(l,.15))).add(z.x.scale(Math.sin(randPct(l,.15))*Math.sin(u))).add(z.z.scale(Math.sin(randPct(l,.15))*Math.cos(u))),u=coordSystem(u),C=createBranch(p,u,b*v*v,g,r,n,x*d*d,g*g,t),a.push(C.branch),m.push(C.core),e.push(f._radii),A.push(u);return{tree:BABYLON.Mesh.MergeMeshes(a),paths:m,radii:e,directions:A}},createTree=function(b,g,r,w,h,l,v,n,x,t,d,c,f,q,a,m){1!=h&&2!=h&&(h=1);var e=createTreeBase(b,g,r,h,l,v,n,d,c,m);e.tree.material=w;var A=b*Math.pow(n,h),y=A/(2*f),z=1.5*Math.pow(g,h-1);n=BABYLON.MeshBuilder.CreateDisc("leaf",{radius:z/2,tessellation:12,sideOrientation:BABYLON.Mesh.DOUBLESIDE},m);b=new BABYLON.SolidParticleSystem("leaveSPS",m,{updatable:!1});b.addShape(n,2*f*Math.pow(l,h),{positionFunction:function(b,a,g){a=Math.floor(g/(2*f));1==h?a++:a=2+a%l+Math.floor(a/l)*(l+1);var E=(g%(2*f)*y+3*y/2)/A,d=Math.ceil(r*E);d>e.paths[a].length-1&&(d=e.paths[a].length-1);var k=d-1,c=k/(r-1),m=d/(r-1);b.position=new BABYLON.Vector3(e.paths[a][k].x+(e.paths[a][d].x-e.paths[a][k].x)*(E-c)/(m-c),e.paths[a][k].y+(e.paths[a][d].y-e.paths[a][k].y)*(E-c)/(m-c)+(.6*z/q+e.radii[a][d])*(g%2*2-1),e.paths[a][k].z+(e.paths[a][d].z-e.paths[a][k].z)*(E-c)/(m-c));b.rotation.z=Math.random()*Math.PI/4;b.rotation.y=Math.random()*Math.PI/2;b.rotation.z=Math.random()*Math.PI/4;b.scale.y=1/q}});b=b.buildMesh();b.billboard=!0;n.dispose();d=new BABYLON.SolidParticleSystem("miniSPS",m,{updatable:!1});n=new BABYLON.SolidParticleSystem("minileavesSPS",m,{updatable:!1});var u=[];c=2*Math.PI/l;for(var p=0;p<Math.pow(l,h+1);p++)u.push(randPct(Math.floor(p/Math.pow(l,h))*c,.2));c=function(a,b,d){var c=d%Math.pow(l,h);1==h?c++:c=2+c%l+Math.floor(c/l)*(l+1);var f=e.directions[c],c=new BABYLON.Vector3(e.paths[c][e.paths[c].length-1].x,e.paths[c][e.paths[c].length-1].y,e.paths[c][e.paths[c].length-1].z),k=u[d],k=f.y.scale(Math.cos(randPct(v,0))).add(f.x.scale(Math.sin(randPct(v,0))*Math.sin(k))).add(f.z.scale(Math.sin(randPct(v,0))*Math.cos(k))),f=BABYLON.Vector3.Cross(BABYLON.Axis.Y,k),k=Math.acos(BABYLON.Vector3.Dot(k,BABYLON.Axis.Y)/k.length());a.scale=new BABYLON.Vector3(Math.pow(g,h+1),Math.pow(g,h+1),Math.pow(g,h+1));a.quaternion=BABYLON.Quaternion.RotationAxis(f,k);a.position=c;};for(var C=[],B=[],p=e.paths.length,D=e.paths[0].length,F=0;F<x;F++)C.push(2*Math.PI*Math.random()-Math.PI),B.push([Math.floor(Math.random()*p),Math.floor(Math.random()*(D-1)+1)]);p=function(a,c,b){var d=B[b][0],f=B[b][1],k=e.directions[d];c=new BABYLON.Vector3(e.paths[d][f].x,e.paths[d][f].y,e.paths[d][f].z);c.addInPlace(k.z.scale(e.radii[d][f]/2));b=C[b];k=k.y.scale(Math.cos(randPct(t,0))).add(k.x.scale(Math.sin(randPct(t,0))*Math.sin(b))).add(k.z.scale(Math.sin(randPct(t,0))*Math.cos(b)));b=BABYLON.Vector3.Cross(BABYLON.Axis.Y,k);k=Math.acos(BABYLON.Vector3.Dot(k,BABYLON.Axis.Y)/k.length());a.scale=new BABYLON.Vector3(Math.pow(g,h+1),Math.pow(g,h+1),Math.pow(g,h+1));a.quaternion=BABYLON.Quaternion.RotationAxis(b,k);a.position=c};d.addShape(e.tree,Math.pow(l,h+1),{positionFunction:c});d.addShape(e.tree,x,{positionFunction:p});d=d.buildMesh();d.material=w;n.addShape(b,Math.pow(l,h+1),{positionFunction:c});n.addShape(b,x,{positionFunction:p});w=n.buildMesh();b.dispose();w.material=a;a=BABYLON.MeshBuilder.CreateBox("",{},m);a.isVisible=!1;e.tree.parent=a;d.parent=a;return w.parent=a};
-
+        var scene = null;
         var createScene = function () {
-            var scene = new BABYLON.Scene(engine);
+            scene = new BABYLON.Scene(engine);
             var camera1 = new BABYLON.ArcRotateCamera("camera1", Math.PI / 2, Math.PI / 4, 10, new BABYLON.Vector3(0, -5, 0), scene);
             scene.activeCamera = camera1;
             scene.activeCamera.attachControl(canvas, true);
@@ -144,8 +144,11 @@
             }));
 
             var animalList = [];
-            var distanceMatrix=[];
+            var animalListWithBellman = [];
+            var animalListMeshes = [];
+            var animalListMeshesFinal = [];
 
+            var distanceMatrix=[];
 
             ground.onReady = function () {
                 ground.optimize(100);
@@ -181,7 +184,7 @@
                 var leaves_on_branch = 5;
                 var leaf_wh_ratio = 0.5;
 
-
+/*
                 //Create Trees
                 BABYLON.SceneLoader.ImportMesh("", "//www.babylonjs.com/assets/Tree/", "tree.babylon", scene, function (newMeshes) {
                     newMeshes[0].material.opacityTexture = null;
@@ -223,7 +226,7 @@
                    // camera.checkCollisions = true;
                    // camera.applyGravity = true;
                 });
-
+*/
 
                 BABYLON.SceneLoader.ImportMesh("Rabbit", "/scenes/", "Rabbit.babylon", scene, function (newMeshes, particleSystems, skeletons) {
                     var rabbit = newMeshes[1];
@@ -247,6 +250,9 @@
                         idx = rabbit_family1.thinInstanceAdd(matrix);
 
                         animalList.push(new BABYLON.Vector3(rabbit_family1.position.x, rabbit_family1.position.y, rabbit_family1.position.z));
+                        animalListMeshes.push("rabbit_family"+x);
+                       // animalList.push(rabbit_family1));
+
                     }
 
                     //TODO: Tavşanlar düzgün dağılmıyor
@@ -366,15 +372,21 @@
                 button.onPointerClickObservable.add(function () {
                     var finalPath =  heldKarpSetup(distanceMatrix, 0);
 
-                    var newArr = [];
                     for (let i=0; i < finalPath.length; i++) {
-                        newArr.push(animalList[finalPath[i]]);
-                        console.log("new  " + newArr);
+                        animalListWithBellman.push(animalList[finalPath[i]]);
                     }
 
+                    for (let i=1; i < finalPath.length  ; i++) {
+                        console.log(finalPath[i]);
+                        animalListMeshesFinal.push(animalListMeshes[finalPath[i] - 1]);
+                    }
+
+                    console.log(finalPath);
+                    console.log(animalListMeshes);
+                    console.log(animalListMeshesFinal);
                     var points = [];
                      for (let i = 0; i < animalList.length; i++) {
-                         points.push(new BABYLON.Vector3(newArr[i].x, 1.5, newArr[i].z ));
+                         points.push(new BABYLON.Vector3(animalListWithBellman[i].x, 1.5, animalListWithBellman[i].z ));
                      }
 
                      //Draw the curve
@@ -411,9 +423,34 @@
 
                 healButton.onPointerClickObservable.add(function () {
 
-                    console.log(hero.position.x);
+                    let temp = 1000;
+                    let currentAnimal = null;
+                    let distance = null;
+                    let ii = null;
 
-                  //  for ()
+                     for (let i = 1; i < animalListWithBellman.length; i++) {
+                        distance = distanceVector(hero.position.x, 0, hero.position.z, animalListWithBellman[i].x, 0, animalListWithBellman[i].z);
+
+                      // console.log("  x  " + hero.position.x +  "  z  " +hero.position.z+ "  x  "+ animalListWithBellman[i].x+ "  z  "+animalListWithBellman[i].z);
+                      // console.log(distance);
+
+                       if ( distance < temp) {
+                           temp = distance;
+                           currentAnimal = animalListMeshesFinal[i - 1];
+                           ii=i;
+                       }
+                     }
+
+                     console.log("dist   " + temp + "  anim  " + currentAnimal);
+
+                     if (temp < 5 ) {
+                         let sk1 = scene.getNodeByName(currentAnimal).skeleton;
+                         var x = animalListWithBellman[ii].x;
+                         var z = animalListWithBellman[ii].z;
+                         scene.getNodeByName(currentAnimal).rotation = new BABYLON.Vector3(0,0,0);
+                         scene.getNodeByName(currentAnimal).position = new BABYLON.Vector3(x + 3.3,-2.1,z);
+                         scene.beginAnimation(sk1, 0, 73, true, 0.8);
+                     }
 
                 });
             }
