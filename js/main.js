@@ -198,9 +198,9 @@ ground.onReady = function () {
             let rabbit_family1=rabbit.clone("rabbit_family"+x);
             rabbit_family1.isVisible = true;
             shadowGenerator.getShadowMap().renderList.push(rabbit_family1);
-            rabbit_family1.position.x = Math.random() * 50;
+            rabbit_family1.position.x = (-1) ** x * Math.random() * 50;
             rabbit_family1.position.y = 0.1;
-            rabbit_family1.position.z = Math.random() * 50 ;
+            rabbit_family1.position.z = (-1) ** x * Math.random() * 50 ;
             rabbit_family1.rotation = new BABYLON.Vector3(0, 0, -1.5);
 
             rabbit_family1.skeleton = rabbit.skeleton.clone("clonedSkeleton1");
@@ -235,7 +235,7 @@ ground.onReady = function () {
         // camera.checkCollisions = true;
         // camera.applyGravity = true;
     });
-
+/*
     BABYLON.SceneLoader.ImportMesh("pig", "/scenes/", "pig.babylon", scene, function (newMeshes, particleSystems, skeletons) {
         let pig = meshes[0];
         pig.scaling = new BABYLON.Vector3(0.001, 0.001, 0.001);
@@ -298,6 +298,8 @@ ground.onReady = function () {
         }
 
     });
+    */
+
         // Load hero character
     BABYLON.SceneLoader.ImportMesh("", "https://assets.babylonjs.com/meshes/", "HVGirl.glb", scene, function (newMeshes, particleSystems, skeletons, animationGroups) {
         hero = newMeshes[0];
