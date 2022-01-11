@@ -2,7 +2,38 @@ let canvas = document.getElementById("render-canvas");
 let engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false});
 let coordSystem=function(b){var g=b.normalize();b=0==Math.abs(b.x)&&0==Math.abs(b.y)?(new BABYLON.Vector3(b.z,0,0)).normalize():(new BABYLON.Vector3(b.y,-b.x,0)).normalize();var r=BABYLON.Vector3.Cross(b,g);return{x:b,y:g,z:r}},randPct=function(b,g){return 0==g?b:(1+(1-2*Math.random())*g)*b},createBranch=function(b,g,r,w,h,l,v,n,x){for(var t=[],d,c=[],f,q=[],a=0;12>a;a++)t[a]=[];for(var m=0;m<h;m++)for(a=m/h,d=g.y.scale(a*r),d.addInPlace(g.x.scale(v*Math.exp(-a)*Math.sin(l*a*Math.PI))),d.addInPlace(b),c[m]=d,d=n*(1+(.4*Math.random()-.2))*(1-(1-w)*a),q.push(d),a=0;12>a;a++)f=a*Math.PI/6,f=g.x.scale(d*Math.cos(f)).add(g.z.scale(d*Math.sin(f))),f.addInPlace(c[m]),t[a].push(f);for(a=0;12>a;a++)t[a].push(c[c.length-1]);return{branch:BABYLON.MeshBuilder.CreateRibbon("branch",{pathArray:t,closeArray:!0},x),core:c,_radii:q}},createTreeBase=function(b,g,r,w,h,l,v,n,x,t){var d=2/(1+Math.sqrt(5)),c=new BABYLON.Vector3(0,1,0),f,c=coordSystem(c),q=new BABYLON.Vector3(0,0,0),a=[],m=[],e=[],A=[],q=createBranch(q,c,b,g,r,1,x,1,t);a.push(q.branch);var y=q.core;m.push(y);e.push(q._radii);A.push(c);for(var q=y[y.length-1],y=2*Math.PI/h,z,u,p,C,B=0;B<h;B++)if(f=randPct(B*y,.25),f=c.y.scale(Math.cos(randPct(l,.15))).add(c.x.scale(Math.sin(randPct(l,.15))*Math.sin(f))).add(c.z.scale(Math.sin(randPct(l,.15))*Math.cos(f))),z=coordSystem(f),f=createBranch(q,z,b*v,g,r,n,x*d,g,t),p=f.core,p=p[p.length-1],a.push(f.branch),m.push(f.core),e.push(f._radii),A.push(z),1<w)for(var D=0;D<h;D++)u=randPct(D*y,.25),u=z.y.scale(Math.cos(randPct(l,.15))).add(z.x.scale(Math.sin(randPct(l,.15))*Math.sin(u))).add(z.z.scale(Math.sin(randPct(l,.15))*Math.cos(u))),u=coordSystem(u),C=createBranch(p,u,b*v*v,g,r,n,x*d*d,g*g,t),a.push(C.branch),m.push(C.core),e.push(f._radii),A.push(u);return{tree:BABYLON.Mesh.MergeMeshes(a),paths:m,radii:e,directions:A}},createTree=function(b,g,r,w,h,l,v,n,x,t,d,c,f,q,a,m){1!=h&&2!=h&&(h=1);var e=createTreeBase(b,g,r,h,l,v,n,d,c,m);e.tree.material=w;var A=b*Math.pow(n,h),y=A/(2*f),z=1.5*Math.pow(g,h-1);n=BABYLON.MeshBuilder.CreateDisc("leaf",{radius:z/2,tessellation:12,sideOrientation:BABYLON.Mesh.DOUBLESIDE},m);b=new BABYLON.SolidParticleSystem("leaveSPS",m,{updatable:!1});b.addShape(n,2*f*Math.pow(l,h),{positionFunction:function(b,a,g){a=Math.floor(g/(2*f));1==h?a++:a=2+a%l+Math.floor(a/l)*(l+1);var E=(g%(2*f)*y+3*y/2)/A,d=Math.ceil(r*E);d>e.paths[a].length-1&&(d=e.paths[a].length-1);var k=d-1,c=k/(r-1),m=d/(r-1);b.position=new BABYLON.Vector3(e.paths[a][k].x+(e.paths[a][d].x-e.paths[a][k].x)*(E-c)/(m-c),e.paths[a][k].y+(e.paths[a][d].y-e.paths[a][k].y)*(E-c)/(m-c)+(.6*z/q+e.radii[a][d])*(g%2*2-1),e.paths[a][k].z+(e.paths[a][d].z-e.paths[a][k].z)*(E-c)/(m-c));b.rotation.z=Math.random()*Math.PI/4;b.rotation.y=Math.random()*Math.PI/2;b.rotation.z=Math.random()*Math.PI/4;b.scale.y=1/q}});b=b.buildMesh();b.billboard=!0;n.dispose();d=new BABYLON.SolidParticleSystem("miniSPS",m,{updatable:!1});n=new BABYLON.SolidParticleSystem("minileavesSPS",m,{updatable:!1});var u=[];c=2*Math.PI/l;for(var p=0;p<Math.pow(l,h+1);p++)u.push(randPct(Math.floor(p/Math.pow(l,h))*c,.2));c=function(a,b,d){var c=d%Math.pow(l,h);1==h?c++:c=2+c%l+Math.floor(c/l)*(l+1);var f=e.directions[c],c=new BABYLON.Vector3(e.paths[c][e.paths[c].length-1].x,e.paths[c][e.paths[c].length-1].y,e.paths[c][e.paths[c].length-1].z),k=u[d],k=f.y.scale(Math.cos(randPct(v,0))).add(f.x.scale(Math.sin(randPct(v,0))*Math.sin(k))).add(f.z.scale(Math.sin(randPct(v,0))*Math.cos(k))),f=BABYLON.Vector3.Cross(BABYLON.Axis.Y,k),k=Math.acos(BABYLON.Vector3.Dot(k,BABYLON.Axis.Y)/k.length());a.scale=new BABYLON.Vector3(Math.pow(g,h+1),Math.pow(g,h+1),Math.pow(g,h+1));a.quaternion=BABYLON.Quaternion.RotationAxis(f,k);a.position=c;};for(var C=[],B=[],p=e.paths.length,D=e.paths[0].length,F=0;F<x;F++)C.push(2*Math.PI*Math.random()-Math.PI),B.push([Math.floor(Math.random()*p),Math.floor(Math.random()*(D-1)+1)]);p=function(a,c,b){var d=B[b][0],f=B[b][1],k=e.directions[d];c=new BABYLON.Vector3(e.paths[d][f].x,e.paths[d][f].y,e.paths[d][f].z);c.addInPlace(k.z.scale(e.radii[d][f]/2));b=C[b];k=k.y.scale(Math.cos(randPct(t,0))).add(k.x.scale(Math.sin(randPct(t,0))*Math.sin(b))).add(k.z.scale(Math.sin(randPct(t,0))*Math.cos(b)));b=BABYLON.Vector3.Cross(BABYLON.Axis.Y,k);k=Math.acos(BABYLON.Vector3.Dot(k,BABYLON.Axis.Y)/k.length());a.scale=new BABYLON.Vector3(Math.pow(g,h+1),Math.pow(g,h+1),Math.pow(g,h+1));a.quaternion=BABYLON.Quaternion.RotationAxis(b,k);a.position=c};d.addShape(e.tree,Math.pow(l,h+1),{positionFunction:c});d.addShape(e.tree,x,{positionFunction:p});d=d.buildMesh();d.material=w;n.addShape(b,Math.pow(l,h+1),{positionFunction:c});n.addShape(b,x,{positionFunction:p});w=n.buildMesh();b.dispose();w.material=a;a=BABYLON.MeshBuilder.CreateBox("",{},m);a.isVisible=!1;e.tree.parent=a;d.parent=a;return w.parent=a};
 
+BABYLON.DefaultLoadingScreen.prototype.displayLoadingUI = function () {
+    if (document.getElementById("customLoadingScreenDiv")) {
+        document.getElementById("customLoadingScreenDiv").style.display = "initial";
+        // Do not add a loading screen if there is already one
+        return;
+    }
 
+    this._loadingDiv = document.createElement("div");
+    this._loadingDiv.id = "customLoadingScreenDiv";
+    this._loadingDiv.innerHTML = "<img src='https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Loadingsome.gif/600px-Loadingsome.gif' />";
+    var customLoadingScreenCss = document.createElement('style');
+    customLoadingScreenCss.type = 'text/css';
+    customLoadingScreenCss.innerHTML = `
+            #customLoadingScreenDiv{
+                background-color: #FFFFFFcc;
+                color: white;
+                font-size:50px;
+                text-align:center;
+            }
+            `;
+    document.getElementsByTagName('head')[0].appendChild(customLoadingScreenCss);
+    this._resizeLoadingUI();
+    window.addEventListener("resize", this._resizeLoadingUI);
+    document.body.appendChild(this._loadingDiv);
+};
+
+BABYLON.DefaultLoadingScreen.prototype.hideLoadingUI = function(){
+    document.getElementById("customLoadingScreenDiv").style.display = "none";
+    console.log("scene is now loaded");
+}
+
+engine.displayLoadingUI();
 let scene = new BABYLON.Scene(engine);
 scene.ambientColor = BABYLON.Color3.FromInts(10, 30, 10);
 scene.clearColor = BABYLON.Color3.FromInts(135, 206, 250);
@@ -277,76 +308,11 @@ ground.onReady = function () {
         // camera.checkCollisions = true;
         // camera.applyGravity = true;
     });
-/*
-    BABYLON.SceneLoader.ImportMesh("pig", "/scenes/", "pig.babylon", scene, function (newMeshes, particleSystems, skeletons) {
-        let pig = meshes[0];
-        pig.scaling = new BABYLON.Vector3(0.001, 0.001, 0.001);
-        //rabbit.position.y = 50;
-        pig.isVisible = true;
-        let pig_family1=pig.clone("pig_family");
 
-        pig.position.x = Math.random() * 50;
-        pig.position.y = 0.1;
-        pig.position.z = Math.random() * 50 ;
-
-
-       // animalList.push(new BABYLON.Vector3(0, 0, 0));
-        for (let x = 0; x < 5; x++) {
-            let pig_family1=pig.clone("pig_family"+x);
-            pig_family1.isVisible = true;
-            //shadowGenerator.getShadowMap().renderList.push(rabbit_family1);
-            pig_family1.position.x = Math.random() * 50;
-            pig_family1.position.y = 0.1;
-            pig_family1.position.z = Math.random() * 50 ;
-            pig_family1.rotation = new BABYLON.Vector3(0, 0, -1.5);
-
-            pig_family1.skeleton = pig.skeleton.clone("clonedSkeleton1");
-
-            matrix = BABYLON.Matrix.Translation(20, 276, -30*2);
-            matrix.addToSelf(BABYLON.Matrix.Scaling(.5,.5,.5));
-            idx = pig_family1.thinInstanceAdd(matrix);
-
-
-        }
-
-    });
-
-    BABYLON.SceneLoader.ImportMesh("chicken", "/scenes/", "chicken.babylon", scene, function (newMeshes, particleSystems, skeletons) {
-        let chicken = newMeshes[1];
-        chicken.scaling = new BABYLON.Vector3(0.001, 0.001, 0.001);
-        //rabbit.position.y = 50;
-        chicken.position.x = 10;
-        chicken.isVisible = false;
-        // animalList.push(new BABYLON.Vector3(0, 0, 0));
-        for (let x = 0; x < 5; x++) {
-            let rabbit_family1=rabbit.clone("rabbit_family"+x);
-            rabbit_family1.isVisible = true;
-            shadowGenerator.getShadowMap().renderList.push(rabbit_family1);
-            rabbit_family1.position.x = Math.random() * 50;
-            rabbit_family1.position.y = 0.1;
-            rabbit_family1.position.z = Math.random() * 50 ;
-            rabbit_family1.rotation = new BABYLON.Vector3(0, 0, -1.5);
-
-            rabbit_family1.skeleton = rabbit.skeleton.clone("clonedSkeleton1");
-
-            matrix = BABYLON.Matrix.Translation(20, 276, -30*2);
-            matrix.addToSelf(BABYLON.Matrix.Scaling(.5,.5,.5));
-            idx = rabbit_family1.thinInstanceAdd(matrix);
-
-            //animalList.push(new BABYLON.Vector3(rabbit_family1.position.x, rabbit_family1.position.y, rabbit_family1.position.z));
-            // animalListMeshes.push("rabbit_family"+x);
-            // animalList.push(rabbit_family1));
-
-        }
-
-    });
-    */
 
         // Load hero character
     BABYLON.SceneLoader.ImportMesh("", "https://assets.babylonjs.com/meshes/", "HVGirl.glb", scene, function (newMeshes, particleSystems, skeletons, animationGroups) {
         hero = newMeshes[0];
-
-
 
         //Scale the model down
         hero.scaling.scaleInPlace(0.1);
@@ -434,6 +400,7 @@ ground.onReady = function () {
                 }
             }
         });
+        engine.hideLoadingUI();
     });
 
     let button = BABYLON.GUI.Button.CreateSimpleButton("but", "Show path");
