@@ -181,7 +181,7 @@ ground.onReady = function () {
     let leaves_on_branch = 5;
     let leaf_wh_ratio = 0.5;
 
-/*
+
                     //Create Trees
                     BABYLON.SceneLoader.ImportMesh("", "//www.babylonjs.com/assets/Tree/", "tree.babylon", scene, function (newMeshes) {
                         newMeshes[0].material.opacityTexture = null;
@@ -223,7 +223,7 @@ ground.onReady = function () {
                        // camera.checkCollisions = true;
                        // camera.applyGravity = true;
                     });
-*/
+
     createGarbage(3, "cyawan.glb");
     createGarbage(3, "cup.glb");
     createGarbage(3,"fork.glb");
@@ -457,9 +457,6 @@ ground.onReady = function () {
             animalListMeshesFinal.push(animalListMeshes[finalPath[i] - 1]);
         }
 
-        //console.log(finalPath);
-        //console.log(animalListMeshes);
-        //console.log(animalListMeshesFinal);
         let points = [];
         for (let i = 0; i < animalList.length; i++) {
             points.push(new BABYLON.Vector3(animalListWithBellman[i].x, 0.1, animalListWithBellman[i].z ));
