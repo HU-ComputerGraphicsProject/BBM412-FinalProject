@@ -1,6 +1,37 @@
 let canvas = document.getElementById("render-canvas");
 let engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false});
 
+BABYLON.DefaultLoadingScreen.prototype.displayLoadingUI = function () {
+    if (document.getElementById("customLoadingScreenDiv")) {
+        document.getElementById("customLoadingScreenDiv").style.display = "initial";
+        // Do not add a loading screen if there is already one
+        return;
+    }
+
+    this._loadingDiv = document.createElement("div");
+    this._loadingDiv.id = "customLoadingScreenDiv";
+    this._loadingDiv.innerHTML = "<img src='https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Loadingsome.gif/600px-Loadingsome.gif' />";
+    var customLoadingScreenCss = document.createElement('style');
+    customLoadingScreenCss.type = 'text/css';
+    customLoadingScreenCss.innerHTML = `
+            #customLoadingScreenDiv{
+                background-color: #FFFFFFcc;
+                color: white;
+                font-size:50px;
+                text-align:center;
+            }
+            `;
+    document.getElementsByTagName('head')[0].appendChild(customLoadingScreenCss);
+    this._resizeLoadingUI();
+    window.addEventListener("resize", this._resizeLoadingUI);
+    document.body.appendChild(this._loadingDiv);
+};
+
+BABYLON.DefaultLoadingScreen.prototype.hideLoadingUI = function(){
+    document.getElementById("customLoadingScreenDiv").style.display = "none";
+    console.log("scene is now loaded");
+}
+engine.displayLoadingUI();
 
 let scene = new BABYLON.Scene(engine);
 scene.ambientColor = BABYLON.Color3.FromInts(10, 30, 10);
@@ -382,6 +413,9 @@ ground.onReady = function () {
                 }
             }
         });
+
+        engine.hideLoadingUI();
+
     });
 
     let button = BABYLON.GUI.Button.CreateSimpleButton("but", "Show path");
@@ -462,6 +496,8 @@ ground.onReady = function () {
             textblock.text = "Animals: " + animalCount;
         }
     });
+
+
 }
 
 function distanceVector( x1,y1,z1, x2,y2,z2 )
