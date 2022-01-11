@@ -155,10 +155,10 @@ ground.onReady = function () {
                         shadowGenerator.getShadowMap().renderList.push(newMeshes[0]);
                         let range = 60;
                         let count = 100;
-                        for (let index = 0; index < count; index++) {
+                        for (let index = 0; index < 10; index++) {
                             let newInstance = newMeshes[0].createInstance("i" + index);
-                            let x = range / 2 - Math.random() * range;
-                            let z = range / 2 - Math.random() * range;
+                            let x = Math.random() * range;
+                            let z = Math.random() * range;
 
                             let y = ground.getHeightAtCoordinates(x, z); // Getting height from ground object
                             newInstance.position = new BABYLON.Vector3(x, y, z);
@@ -237,29 +237,33 @@ ground.onReady = function () {
     });
 
     BABYLON.SceneLoader.ImportMesh("pig", "/scenes/", "pig.babylon", scene, function (newMeshes, particleSystems, skeletons) {
-        let pig = newMeshes[1];
+        let pig = meshes[0];
         pig.scaling = new BABYLON.Vector3(0.001, 0.001, 0.001);
         //rabbit.position.y = 50;
-        pig.isVisible = false;
+        pig.isVisible = true;
+        let pig_family1=pig.clone("pig_family");
+
+        pig.position.x = Math.random() * 50;
+        pig.position.y = 0.1;
+        pig.position.z = Math.random() * 50 ;
+
+
        // animalList.push(new BABYLON.Vector3(0, 0, 0));
         for (let x = 0; x < 5; x++) {
-            let rabbit_family1=rabbit.clone("rabbit_family"+x);
-            rabbit_family1.isVisible = true;
-            shadowGenerator.getShadowMap().renderList.push(rabbit_family1);
-            rabbit_family1.position.x = Math.random() * 50;
-            rabbit_family1.position.y = 0.1;
-            rabbit_family1.position.z = Math.random() * 50 ;
-            rabbit_family1.rotation = new BABYLON.Vector3(0, 0, -1.5);
+            let pig_family1=pig.clone("pig_family"+x);
+            pig_family1.isVisible = true;
+            //shadowGenerator.getShadowMap().renderList.push(rabbit_family1);
+            pig_family1.position.x = Math.random() * 50;
+            pig_family1.position.y = 0.1;
+            pig_family1.position.z = Math.random() * 50 ;
+            pig_family1.rotation = new BABYLON.Vector3(0, 0, -1.5);
 
-            rabbit_family1.skeleton = rabbit.skeleton.clone("clonedSkeleton1");
+            pig_family1.skeleton = pig.skeleton.clone("clonedSkeleton1");
 
             matrix = BABYLON.Matrix.Translation(20, 276, -30*2);
             matrix.addToSelf(BABYLON.Matrix.Scaling(.5,.5,.5));
-            idx = rabbit_family1.thinInstanceAdd(matrix);
+            idx = pig_family1.thinInstanceAdd(matrix);
 
-            //animalList.push(new BABYLON.Vector3(rabbit_family1.position.x, rabbit_family1.position.y, rabbit_family1.position.z));
-           // animalListMeshes.push("rabbit_family"+x);
-            // animalList.push(rabbit_family1));
 
         }
 
