@@ -6,19 +6,39 @@ let coordSystem=function(b){var g=b.normalize();b=0==Math.abs(b.x)&&0==Math.abs(
 let scene = new BABYLON.Scene(engine);
 scene.ambientColor = BABYLON.Color3.FromInts(10, 30, 10);
 scene.clearColor = BABYLON.Color3.FromInts(135, 206, 250);
-scene.gravity = new BABYLON.Vector3(0, -9.8, 0);
+//scene.gravity = new BABYLON.Vector3(0, -9.8, 0);
 //scene.fogMode = BABYLON.Scene.FOGMODE_EXP;
 //scene.fogDensity = 0.02;
 //scene.fogColor = scene.clearColor;
 
-
+/*
 let camera1 = new BABYLON.ArcRotateCamera("camera1", Math.PI / 2, Math.PI / 4, 10, new BABYLON.Vector3(0, -5, 0), scene);
 scene.activeCamera = camera1;
 scene.activeCamera.attachControl(canvas, true);
 camera1.lowerRadiusLimit = 2;
 camera1.upperRadiusLimit = 10;
 camera1.wheelDeltaPercentage = 0.01;
+*/
 
+const camera = new BABYLON.ArcRotateCamera('arcCamera1', 0, 0, 10, BABYLON.Vector3.Zero(), scene)
+// camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius;
+camera.attachControl(canvas, false)
+camera.setPosition(new BABYLON.Vector3(50, 100, 100))
+camera.checkCollisions = true
+camera.applyGravity = true
+camera.ellipsoid = new BABYLON.Vector3(1, 1, 1);
+
+camera.lowerRadiusLimit = 2
+camera.upperRadiusLimit = 20
+
+camera.keysLeft = []
+camera.keysRight = []
+camera.keysUp = []
+camera.keysDown = []
+
+const assumedFramesPerSecond = 60;
+const earthGravity = -9.81;
+scene.gravity = new BABYLON.Vector3(0, earthGravity / assumedFramesPerSecond, 0);
 
 //let light = new BABYLON.PointLight("light", new BABYLON.Vector3(10, 10, 0), scene);
 let light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, -0.5, -1.0), scene);
@@ -56,6 +76,15 @@ textblock.top = "-450px";
 textblock.left = "-850px";
 textblock.color = "white";
 advancedTexture.addControl(textblock);
+
+let score = 0;
+let textblock2 = new BABYLON.GUI.TextBlock();
+textblock2.text = "Score: " + score;
+textblock2.fontSize = 24;
+textblock2.top = "-400px";
+textblock2.left = "-850px";
+textblock2.color = "white";
+advancedTexture.addControl(textblock2);
 
 // Invisible borders
 let border0 = BABYLON.Mesh.CreateBox("border0", 1, scene);
@@ -105,19 +134,24 @@ scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionM
     inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
 }));
 
+
+
+
 let animalList = [];
 let animalListWithBellman = [];
 let animalListMeshes = [];
 let animalListMeshesFinal = [];
 let distanceMatrix=[];
 let garbageList = [];
+let garbagePositionList = [];
+let hero = null;
 
 ground.onReady = function () {
     ground.optimize(100);
 
     // Shadows
     let shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
-    let hero = null;
+
     // Trees
 
     //leaf material
@@ -147,7 +181,7 @@ ground.onReady = function () {
     let leaves_on_branch = 5;
     let leaf_wh_ratio = 0.5;
 
-
+/*
                     //Create Trees
                     BABYLON.SceneLoader.ImportMesh("", "//www.babylonjs.com/assets/Tree/", "tree.babylon", scene, function (newMeshes) {
                         newMeshes[0].material.opacityTexture = null;
@@ -189,7 +223,7 @@ ground.onReady = function () {
                        // camera.checkCollisions = true;
                        // camera.applyGravity = true;
                     });
-
+*/
     createGarbage(3, "cyawan.glb");
     createGarbage(3, "cup.glb");
     createGarbage(3,"fork.glb");
@@ -312,11 +346,16 @@ ground.onReady = function () {
     BABYLON.SceneLoader.ImportMesh("", "https://assets.babylonjs.com/meshes/", "HVGirl.glb", scene, function (newMeshes, particleSystems, skeletons, animationGroups) {
         hero = newMeshes[0];
 
+
+
         //Scale the model down
         hero.scaling.scaleInPlace(0.1);
 
         //Lock camera on the character
-        camera1.target = hero;
+        //camera1.target = hero;
+
+        camera.setTarget(hero)
+
 
         //Hero character variables
         let heroSpeed = 0.3;
@@ -354,7 +393,13 @@ ground.onReady = function () {
             if (inputMap["b"]) {
                 keydown = true;
             }
-
+            if (inputMap["e"]) {
+                collectGarbage();
+                keydown = true;
+            }if (inputMap["r"]) {
+                healAnimal();
+                keydown = true;
+            }
             //Manage animations to be played
             if (keydown) {
                 if (!animating) {
@@ -375,7 +420,6 @@ ground.onReady = function () {
                 }
             }
             else {
-
                 if (animating) {
                     //Default animation is idle when no key is down
                     idleAnim.start(true, 1.0, idleAnim.from, idleAnim.to, false);
@@ -428,55 +472,6 @@ ground.onReady = function () {
         track.edgesWidth = 6.0;
 
     });
-    let healButton = BABYLON.GUI.Button.CreateSimpleButton("but", "Heal the animal");
-    healButton.width = 0.1;
-    healButton.height = "40px";
-    healButton.color = "white";
-    healButton.background = "green";
-    healButton.top = "-300px";
-    healButton.left = "800px";
-    advancedTexture.addControl(healButton);
-
-    healButton.onPointerClickObservable.add(function () {
-
-        let temp = 1000;
-        let currentAnimal = null;
-        let distance = null;
-        let ii = null;
-
-        for (let i = 1; i < animalListWithBellman.length; i++) {
-            distance = distanceVector(hero.position.x, 0, hero.position.z, animalListWithBellman[i].x, 0, animalListWithBellman[i].z);
-
-            // console.log("  x  " + hero.position.x +  "  z  " +hero.position.z+ "  x  "+ animalListWithBellman[i].x+ "  z  "+animalListWithBellman[i].z);
-            // console.log(distance);
-
-            if ( distance < temp) {
-                temp = distance;
-                currentAnimal = animalListMeshesFinal[i - 1];
-                ii=i;
-            }
-        }
-
-        console.log("dist   " + temp + "  anim  " + currentAnimal);
-
-        if (temp < 5 ) {
-            let sk1 = scene.getNodeByName(currentAnimal).skeleton;
-            let x = animalListWithBellman[ii].x;
-            let z = animalListWithBellman[ii].z;
-            scene.getNodeByName(currentAnimal).rotation = new BABYLON.Vector3(0,0,0);
-            scene.getNodeByName(currentAnimal).position = new BABYLON.Vector3(x + 3.3,-2.1,z);
-            scene.beginAnimation(sk1, 0, 73, true, 0.8);
-            animalCount -= 1;
-            textblock.text = "Animals: " + animalCount;
-        }
-    });
-    var keys = {};
-
-    if((keys['b'])  ){
-        console.log("garbageList  " + garbageList);
-   }
-
-
 }
 
 function distanceVector( x1,y1,z1, x2,y2,z2 )
@@ -506,7 +501,8 @@ function createGarbage(count, obj) {
             newInstance.rotate(BABYLON.Axis.Y, Math.random() * Math.PI * 2, BABYLON.Space.WORLD);
             let scale = 2;
             newInstance.scaling.addInPlace(new BABYLON.Vector3(scale, scale, scale));
-            garbageList.push(obj + "index");
+            garbageList.push(newInstance);
+            garbagePositionList.push(new BABYLON.Vector3(x, y, z));
         }
 
     });
@@ -525,6 +521,61 @@ function createLodge(obj) {
             let y = ground.getHeightAtCoordinates(x, z); // Getting height from ground object
             newInstance.position = new BABYLON.Vector3(x, y, z);
     });
+}
+
+function collectGarbage() {
+    let temp = 1000;
+    let currentGarbage = null;
+    let distance = null;
+    let ii = null;
+
+    for (let i = 1; i < garbageList.length; i++) {
+        distance = distanceVector(hero.position.x, 0, hero.position.z, garbageList[i].position.x, 0, garbageList[i].position.z);
+
+        if ( distance < temp) {
+            temp = distance;
+            currentGarbage = garbageList[i];
+            ii=i;
+        }
+    }
+
+    if (temp < 3 ) {
+        currentGarbage.position.x = 500;
+        currentGarbage.position.y = -100;
+        currentGarbage.position.z = 500;
+        score += 10;
+        textblock2.text = "Score: " + score;
+    }
+}
+
+function healAnimal() {
+    let temp = 1000;
+    let currentAnimal = null;
+    let distance = null;
+    let ii = null;
+
+    for (let i = 1; i < animalListWithBellman.length; i++) {
+        distance = distanceVector(hero.position.x, 0, hero.position.z, animalListWithBellman[i].x, 0, animalListWithBellman[i].z);
+
+        if ( distance < temp) {
+            temp = distance;
+            currentAnimal = animalListMeshesFinal[i - 1];
+            ii=i;
+        }
+    }
+
+     if (temp < 3 ) {
+        let sk1 = scene.getNodeByName(currentAnimal).skeleton;
+        let x = animalListWithBellman[ii].x;
+        let z = animalListWithBellman[ii].z;
+        scene.getNodeByName(currentAnimal).rotation = new BABYLON.Vector3(0,0,0);
+        scene.beginAnimation(sk1, 0, 73, true, 0.8);
+        animalCount -= 1;
+        textblock.text = "Animals: " + animalCount;
+
+        score += 20;
+        textblock2.text = "Score: " + score;
+    }
 }
 
 let renderLoop = function () {
