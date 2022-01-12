@@ -81,7 +81,7 @@ light.range = 100;
 let skybox = BABYLON.Mesh.CreateBox("skyBox", 150.0, scene);
 let skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
 skyboxMaterial.backFaceCulling = false;
-skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture("textures/skybox", scene);
+skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture('//www.babylonjs.com/assets/skybox/TropicalSunnyDay', scene);
 skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
 skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
 skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
@@ -165,7 +165,10 @@ scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionM
     inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
 }));
 
-
+//variables for animal
+let texList=[];
+let shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
+let manager = new BABYLON.GUI.GUI3DManager(scene);
 
 
 let animalList = [];
@@ -177,11 +180,41 @@ let garbageList = [];
 let garbagePositionList = [];
 let hero = null;
 
-ground.onReady = function () {
+
+BABYLON.Effect.ShadersStore["customVertexShader"]= `   
+		precision highp float;
+    	attribute vec3 position;
+    	attribute vec2 uv;
+    	uniform mat4 worldViewProjection;
+    	varying vec2 vUV;
+    	void main(void) {
+    	    gl_Position = worldViewProjection * vec4(position, 1.0);
+    	    vUV = uv;
+    	}`;
+
+BABYLON.Effect.ShadersStore["customFragmentShader"]=`
+	    precision highp float;
+        varying vec2 vUV;
+        uniform vec2 screenSize;
+    	uniform sampler2D textureSampler;
+        uniform highp sampler2D depth;
+       	void main(void) {
+            vec2 coords = gl_FragCoord.xy / screenSize;
+            float distanceToCenter = length(vUV - vec2(0.5,0.5));
+            float d = texture2D(depth, coords).x;
+            float z = gl_FragCoord.z;
+            float a = z > d ? 0.3 : 1.0;
+            a = distanceToCenter < 0.5 ? a : 0.0;
+            float plop = distanceToCenter < 0.45 ? 1.0 : .8;
+            gl_FragColor = vec4(texture2D(textureSampler, vUV).xyz * plop, a);
+    	}`;
+
+
+ground.onReady = async function () {
     ground.optimize(100);
 
     // Shadows
-    let shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
+    //let shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
 
     // Trees
 
@@ -230,8 +263,7 @@ ground.onReady = function () {
                             let y = ground.getHeightAtCoordinates(x, z); // Getting height from ground object
                             newInstance.position = new BABYLON.Vector3(x, y, z);
                             newInstance.rotate(BABYLON.Axis.Y, Math.random() * Math.PI * 2, BABYLON.Space.WORLD);
-                            let scale = 0.5 + Math.random() * 2;
-                            newInstance.scaling.addInPlace(new BABYLON.Vector3(scale, scale, scale));
+                            newInstance.scaling = new BABYLON.Vector3(50.1,50.1,50.1);
 
                             shadowGenerator.getShadowMap().renderList.push(newInstance);
                         }
@@ -245,6 +277,7 @@ ground.onReady = function () {
                             //TODO:Ağaçları küçült ya da hazırları büyült
                             //tree.scale=new BABYLON.Vector3(0.020, 0.020, 0.020);
                             tree.position=new BABYLON.Vector3(x, y, z) ;
+                            tree.scaling = new BABYLON.Vector3(0.5,0.5,0.5);
                         }
 
                         shadowGenerator.getShadowMap().refreshRate = 0; // We need to compute it just once
@@ -309,6 +342,10 @@ ground.onReady = function () {
         // camera.applyGravity = true;
     });
 
+    //Load animals
+    createAnimal(3,"Playfuldog.glb",1,0.5);
+    createAnimal(3,"pig.babylon",0,0.03);
+    createAnimal(3,"chicken.babylon",0,0.009);
 
         // Load hero character
     BABYLON.SceneLoader.ImportMesh("", "https://assets.babylonjs.com/meshes/", "HVGirl.glb", scene, function (newMeshes, particleSystems, skeletons, animationGroups) {
@@ -436,6 +473,250 @@ ground.onReady = function () {
         track.edgesWidth = 6.0;
 
     });
+
+
+    //FLOWERS
+
+    // Load a GUI from the snippet server.
+    let gui = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("GUI", true, scene);
+    let loadedGUI = await gui.parseFromSnippetAsync("FZ9KU3#9");
+    // Set the ideal W and H if you wish to scale with the window.
+    gui.idealWidth = 2048;
+    gui.idealHeight = 2048;
+
+    // Get a control by name a change a property.
+    let backgroundBox = gui.getControlByName("BackgroundBox");
+    backgroundBox.isVisible = false;
+
+    /*
+        let menubox = gui.getControlByName("Menubox");
+        menubox.isVisible = true;
+
+        let healBtn = gui.getControlByName("HealBtn");
+        let showPathBtn = gui.getControlByName("ShowPathBtn");
+        let plantBtn = gui.getControlByName("PlantBtn");
+    */
+
+
+    let choosePlant = BABYLON.GUI.Button.CreateSimpleButton("but", "Plant");
+    choosePlant.width = 0.1;
+    choosePlant.height = "30px";
+    choosePlant.color = "white";
+    choosePlant.background = "green";
+    choosePlant.top = "-300px";
+    choosePlant.left = "800px";
+    advancedTexture.addControl(choosePlant);
+
+    choosePlant.onPointerClickObservable.add( () => {
+        backgroundBox.isVisible = true;
+        choosePlant.isVisible = false;
+    });
+
+
+
+    var scaleFactor;
+    var plant;
+    var plantBoolean=false;
+
+    let tulipBtn = gui.getControlByName("TulipBtn");
+    let roseBtn = gui.getControlByName("RoseBtn");
+    let shrubBtn = gui.getControlByName("ShrubBtn");
+    let sunflowerBtn = gui.getControlByName("SunflowerBtn");
+    let daisyBtn = gui.getControlByName("DaisyBtn");
+    let whiteBtn = gui.getControlByName("WhiteTreeBtn");
+
+    let treeBtn = gui.getControlByName("TreeBtn");
+    let appleTreeBtn = gui.getControlByName("AppleTreeBtn");
+    let grassBtn= gui.getControlByName("GrassBtn");
+
+    let exitButton = gui.getControlByName("ExitButton");
+
+    exitButton.onPointerClickObservable.add( () => {
+        backgroundBox.isVisible = false;
+        choosePlant.isVisible = true;
+    });
+
+    roseBtn.onPointerClickObservable.add( () => {
+        plantBoolean=true;
+        plant="Rose";
+        scaleFactor=0.2;
+        backgroundBox.isVisible = false;
+        choosePlant.isVisible = true;
+
+    });
+
+    daisyBtn.onPointerClickObservable.add( () => {
+        plantBoolean=true;
+        plant="Daisy";
+        scaleFactor=0.2;
+        backgroundBox.isVisible = false;
+        choosePlant.isVisible = true;
+
+    });
+
+    shrubBtn.onPointerClickObservable.add( () => {
+        plantBoolean=true;
+        plant="Shrub";
+        scaleFactor=0.03;
+        backgroundBox.isVisible = false;
+        choosePlant.isVisible = true;
+    });
+
+
+    tulipBtn.onPointerClickObservable.add( () => {
+        plantBoolean=true;
+        plant="Tulip";
+        scaleFactor=0.2;
+        backgroundBox.isVisible = false;
+        choosePlant.isVisible = true;
+
+    });
+
+    sunflowerBtn.onPointerClickObservable.add( () => {
+        plantBoolean=true;
+        plant="Sunflower";
+        scaleFactor=0.5;
+        backgroundBox.isVisible = false;
+        choosePlant.isVisible = true;
+
+    });
+
+    whiteBtn.onPointerClickObservable.add( () => {
+        plantBoolean=true;
+        plant="WhiteOakTree";
+        scaleFactor=0.05;
+        backgroundBox.isVisible = false;
+        choosePlant.isVisible = true;
+
+    });
+
+    treeBtn.onPointerClickObservable.add( () => {
+        plantBoolean=true;
+        plant="rocks_trees_ao";
+        scaleFactor=0.5;
+        backgroundBox.isVisible = false;
+        choosePlant.isVisible = true;
+
+    });
+
+    appleTreeBtn.onPointerClickObservable.add( () => {
+        plantBoolean=true;
+        plant="AppleTree";
+        scaleFactor=0.05;
+        backgroundBox.isVisible = false;
+        choosePlant.isVisible = true;
+
+    });
+
+    grassBtn.onPointerClickObservable.add( () => {
+        plantBoolean=true;
+        plant="grass";
+        scaleFactor=2.5;
+        backgroundBox.isVisible = false;
+        choosePlant.isVisible = true;
+
+    });
+
+
+    /*
+    particleSystem.start();
+        window.setTimeout(function () {
+             particleSystem.stop();
+        }, 250);
+
+     */
+
+    let vector = { x:'', y:'', z:'' };
+    scene.onPointerDown = function (event, pickResult){
+
+        if (plantBoolean){
+            //left mouse click
+            if(event.button == 2){
+                vector = pickResult.pickedPoint;
+                console.log('rigth mouse click: ' + vector.x + ',' + vector.y + ',' + vector.z );
+                BABYLON.SceneLoader.ImportMesh("", "/scenes/plants/", plant+".glb", scene, function (newMeshes) {
+                    newMeshes[1].material.opacityTexture = null;
+                    newMeshes[1].material.backFaceCulling = false;
+                    for (let i = 1; i <newMeshes.length ; i++) {
+                        newMeshes[i].isVisible = false;
+                    }
+
+                    for (let i = 1; i <newMeshes.length ; i++) {
+                        newMeshes[i].position.y = ground.getHeightAtCoordinates(0, 0); // Getting height from ground object
+                        shadowGenerator.getShadowMap().renderList.push(newMeshes[i]);
+                        // var range = 50;
+                        var count = 1;
+                        for (var index = 0; index < count; index++) {
+                            var newInstance = newMeshes[i].createInstance("i" + index);
+                            newInstance.position = new BABYLON.Vector3(vector.x, -0.05, vector.z);
+                            newInstance.scaling = new BABYLON.Vector3(scaleFactor,scaleFactor,scaleFactor);
+
+                            shadowGenerator.getShadowMap().renderList.push(newInstance);
+                        }
+
+                    }
+
+
+                    shadowGenerator.getShadowMap().refreshRate = 0; // We need to compute it just once
+                    shadowGenerator.usePoissonSampling = true;
+
+                });
+
+                var animations=[];
+                var animat= BABYLON.SceneLoader.ImportMesh("", "/scenes/", "FloatingRainbowHearts.glb", scene, function (newMeshes) {
+                    //newMeshes[1].material.opacityTexture = null;
+                    //newMeshes[1].material.backFaceCulling = false;
+                    for (let i = 1; i <newMeshes.length ; i++) {
+                        newMeshes[i].isVisible = false;
+                    }
+
+                    for (let i = 1; i <newMeshes.length ; i++) {
+                        //newMeshes[i].position.y = ground.getHeightAtCoordinates(0, 0); // Getting height from ground object
+                        shadowGenerator.getShadowMap().renderList.push(newMeshes[i]);
+
+                        // var range = 50;
+                        var count = 1;
+                        for (var index = 0; index < count; index++) {
+                            var newInstance = newMeshes[i].createInstance("i" + index);
+                            animations.push(newInstance);
+                            newInstance.position = new BABYLON.Vector3(vector.x+1, -0.05, vector.z);
+                            newInstance.scaling = new BABYLON.Vector3(300,300,300);
+
+                            shadowGenerator.getShadowMap().renderList.push(newInstance);
+                        }
+
+                    }
+
+                    shadowGenerator.getShadowMap().refreshRate = 0; // We need to compute it just once
+                    shadowGenerator.usePoissonSampling = true;
+
+                });
+
+
+                /* window.setTimeout(function () {
+                     stopAni(animations);
+                     console.log("dömöd");
+                 }, 650);
+
+
+                 function stopAni( animations )
+                 {
+                     console.log(animations.length);
+                     console.log("knskns");
+                     for (let i = 0; i <9 ; i++) {
+                         var ani=animations[i];
+                         for (let i = 1; i <ani.length ; i++) {
+                             ani[i].isVisible = false;
+                             console.log("dn");
+                         }
+                     }
+                 }*/
+            }
+
+        }
+
+    }
+
 }
 
 function distanceVector( x1,y1,z1, x2,y2,z2 )
@@ -485,6 +766,127 @@ function createLodge(obj) {
             let y = ground.getHeightAtCoordinates(x, z); // Getting height from ground object
             newInstance.position = new BABYLON.Vector3(x, y, z);
     });
+}
+
+function createAnimal(count, obj , num , scaleFactor) {
+    BABYLON.SceneLoader.ImportMesh("", "/scenes/", obj, scene, function (newMeshes) {
+        //scene.getMeshByID("__root__").position = new BABYLON.Vector3(1, 1, 1);
+        newMeshes[num].material.opacityTexture = null;
+        newMeshes[num].material.backFaceCulling = false;
+        newMeshes[num].isVisible = false;
+        newMeshes[num].position.y = ground.getHeightAtCoordinates(0, 0); // Getting height from ground object
+        shadowGenerator.getShadowMap().renderList.push(newMeshes[num]);
+        var range = 50;
+        var count = 3;
+
+        for (var index = 0; index < count; index++) {
+            var newInstance = newMeshes[num].createInstance("i" + index);
+            var x = Math.random() * range;
+            var z =  Math.random() * range;
+
+            var y = ground.getHeightAtCoordinates(x, z); // Getting height from ground object
+            newInstance.position = new BABYLON.Vector3(x, y, z);
+            newInstance.rotate(BABYLON.Axis.Y, Math.random() * Math.PI * 2, BABYLON.Space.WORLD);
+            newInstance.scaling.addInPlace(new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor));
+
+            shadowGenerator.getShadowMap().renderList.push(newInstance);
+
+            var tex2 = new BABYLON.DynamicTexture("name"+index, {width: 256, height: 256}, scene);
+            var font2 = "bold 124px monospace";
+            tex2.drawText("2", null, null, font2, "black", "red", true, true);
+
+            var renderer = scene.enableDepthRenderer(camera, true);
+
+
+            // Sprite1
+            var spriteMaterial = new BABYLON.ShaderMaterial("mat", scene, {
+                    vertex: "custom",
+                    fragment: "custom",
+                },
+                {
+                    attributes: ["position", "uv"],
+                    uniforms: ["worldViewProjection", "screenSize"],
+                    needAlphaBlending: true
+                });
+
+            spriteMaterial.setTexture("depth", renderer.getDepthMap());
+            spriteMaterial.setTexture("textureSampler", tex2);
+            spriteMaterial.backFaceCulling = false;
+            spriteMaterial.disableDepthWrite = true;
+            spriteMaterial.alphaMode = BABYLON.Engine.ALPHA_COMBINE;
+
+
+            // Sprite2
+            var sprite2 = new BABYLON.MeshBuilder.CreatePlane("sprite"+index, { size:0.3 }, scene);
+
+            sprite2.material = spriteMaterial;
+            sprite2.position.y = y+2;
+            sprite2.position.z = z;
+            sprite2.position.x = x;
+
+            texList.push(sprite2);
+
+            var pushButton2 = new BABYLON.GUI.MeshButton3D(sprite2, "pushButton2");
+            manager.addControl(pushButton2);
+
+            pushButton2.onPointerClickObservable.add((e)=>{
+                console.log('PushButton1 pushed!');
+                changeColor();
+
+            });
+
+
+        }
+        shadowGenerator.getShadowMap().refreshRate = 0; // We need to compute it just once
+        shadowGenerator.usePoissonSampling = true;
+
+    });
+
+}
+function changeColor() {
+    let temp = 1000;
+    let currentGarbage = null;
+    let distance = null;
+    let ii = null;
+
+    for (let i = 0; i < texList.length; i++) {
+        distance = distanceVector(hero.position.x, 0, hero.position.z, texList[i].position.x, 0, texList[i].position.z);
+
+        if ( distance < temp) {
+            temp = distance;
+            currentGarbage = texList[i];
+            ii=i;
+        }
+    }
+
+    if (temp < 5 ) {
+
+        var tex2 = new BABYLON.DynamicTexture("name", {width: 256, height: 256}, scene);
+        var font2 = "bold 124px monospace";
+        tex2.drawText("10", null, null, font2, "black", "green", true, true);
+
+        var renderer = scene.enableDepthRenderer(camera, true);
+
+
+// Sprite1
+        var spriteMaterial = new BABYLON.ShaderMaterial("mat", scene, {
+                vertex: "custom",
+                fragment: "custom",
+            },
+            {
+                attributes: ["position", "uv"],
+                uniforms: ["worldViewProjection", "screenSize"],
+                needAlphaBlending: true
+            });
+
+        spriteMaterial.setTexture("depth", renderer.getDepthMap());
+        spriteMaterial.setTexture("textureSampler", tex2);
+        spriteMaterial.backFaceCulling = false;
+        spriteMaterial.disableDepthWrite = true;
+        spriteMaterial.alphaMode = BABYLON.Engine.ALPHA_COMBINE;
+
+        currentGarbage.material = spriteMaterial;
+    }
 }
 
 function collectGarbage() {
@@ -547,3 +949,7 @@ let renderLoop = function () {
 };
 
 engine.runRenderLoop(renderLoop);
+
+window.addEventListener("resize", function () {
+    engine.resize();
+});
