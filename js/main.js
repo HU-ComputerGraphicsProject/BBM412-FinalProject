@@ -153,6 +153,8 @@ groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
 groundMaterial.emissiveColor = new BABYLON.Color3(0.3, 0.3, 0.3);
 ground.material = groundMaterial;
 ground.receiveShadows = true;
+ground.position.x = 40;
+ground.position.z = 40;
 //ground.checkCollisions = true;
 
 // Keyboard events
@@ -165,13 +167,49 @@ scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionM
     inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
 }));
 
+let isStart = false;
+let points = [];
+let isPathVisible = false;
+let track = null;
 
+var textblockRules = new BABYLON.GUI.TextBlock();
+textblockRules.text = "Press START!";
+textblockRules.fontSize = 18;
+textblockRules.fontFamily = "Segoe UI"
+textblockRules.height = "100px";
+textblockRules.top = "80px";
+textblockRules.color = "Yellow";
+textblockRules.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+textblockRules.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+advancedTexture.addControl(textblockRules);
 
+var buttonStart = BABYLON.GUI.Button.CreateSimpleButton("onoff", "START");
+buttonStart.width = "100px";
+buttonStart.height = "100px";
+buttonStart.color = "white";
+buttonStart.fontSize = 30;
+buttonStart.fontFamily = "Segoe UI"
+buttonStart.cornerRadius = 20;
+buttonStart.paddingBottom = 5;
+buttonStart.thickness = 2;
+buttonStart.background = "green";
+
+buttonStart.onPointerClickObservable.add(function() {
+    let isStart = true;
+    buttonStart.isEnabled = false;
+    buttonStart.isVisible = false;
+    textblockRules.isEnabled = false;
+    textblockRules.alpha = 0;
+    calculatePath();
+});
+
+advancedTexture.addControl(buttonStart);
 
 let animalList = [];
 let animalListWithBellman = [];
 let animalListMeshes = [];
-let animalListMeshesFinal = [];
+let animalListMeshesFinal = [];7
+let animalHealList = [];
 let distanceMatrix=[];
 let garbageList = [];
 let garbagePositionList = [];
@@ -212,7 +250,7 @@ ground.onReady = function () {
     let leaves_on_branch = 5;
     let leaf_wh_ratio = 0.5;
 
-
+/*
                     //Create Trees
                     BABYLON.SceneLoader.ImportMesh("", "//www.babylonjs.com/assets/Tree/", "tree.babylon", scene, function (newMeshes) {
                         newMeshes[0].material.opacityTexture = null;
@@ -254,7 +292,7 @@ ground.onReady = function () {
                        // camera.checkCollisions = true;
                        // camera.applyGravity = true;
                     });
-
+*/
     createGarbage(3, "cyawan.glb");
     createGarbage(3, "cup.glb");
     createGarbage(3,"fork.glb");
@@ -271,9 +309,9 @@ ground.onReady = function () {
             let rabbit_family1=rabbit.clone("rabbit_family"+x);
             rabbit_family1.isVisible = true;
             shadowGenerator.getShadowMap().renderList.push(rabbit_family1);
-            rabbit_family1.position.x = (-1) ** x * Math.random() * 50;
+            rabbit_family1.position.x =  Math.random() * 50;
             rabbit_family1.position.y = 0.1;
-            rabbit_family1.position.z = (-1) ** x * Math.random() * 50 ;
+            rabbit_family1.position.z = Math.random() * 50 ;
             rabbit_family1.rotation = new BABYLON.Vector3(0, 0, -1.5);
 
             rabbit_family1.skeleton = rabbit.skeleton.clone("clonedSkeleton1");
@@ -309,19 +347,28 @@ ground.onReady = function () {
         // camera.applyGravity = true;
     });
 
+    loadCharacter();
 
-        // Load hero character
+}
+
+function distanceVector( x1,y1,z1, x2,y2,z2 )
+{
+    var dx = x1 - x2;
+    var dy = y1 - y2;
+    var dz = z1 - z2;
+
+    return  Math.sqrt( dx * dx + dy * dy + dz * dz );
+}
+
+function loadCharacter() {
+    // Load hero character
     BABYLON.SceneLoader.ImportMesh("", "https://assets.babylonjs.com/meshes/", "HVGirl.glb", scene, function (newMeshes, particleSystems, skeletons, animationGroups) {
         hero = newMeshes[0];
-
         //Scale the model down
         hero.scaling.scaleInPlace(0.1);
 
         //Lock camera on the character
-        //camera1.target = hero;
-
         camera.setTarget(hero)
-
 
         //Hero character variables
         let heroSpeed = 0.3;
@@ -329,12 +376,10 @@ ground.onReady = function () {
         let heroRotationSpeed = 0.1;
 
         let animating = true;
-
         const walkAnim = scene.getAnimationGroupByName("Walking");
         const walkBackAnim = scene.getAnimationGroupByName("WalkingBack");
         const idleAnim = scene.getAnimationGroupByName("Idle");
         const sambaAnim = scene.getAnimationGroupByName("Samba");
-
 
         //Rendering loop (executed for everyframe)
         scene.onBeforeRenderObservable.add(() => {
@@ -364,6 +409,15 @@ ground.onReady = function () {
                 keydown = true;
             }if (inputMap["r"]) {
                 healAnimal();
+                keydown = true;
+            }if (inputMap["q"]) {
+                if (!isPathVisible) {
+                    drawPath();
+                    isPathVisible = true;
+                } else {
+                    destroyPath();
+                    isPathVisible = false;
+                }
                 keydown = true;
             }
             //Manage animations to be played
@@ -400,51 +454,9 @@ ground.onReady = function () {
                 }
             }
         });
+
         engine.hideLoadingUI();
     });
-
-    let button = BABYLON.GUI.Button.CreateSimpleButton("but", "Show path");
-    button.width = 0.1;
-    button.height = "40px";
-    button.color = "white";
-    button.background = "green";
-    button.top = "-400px";
-    button.left = "800px";
-    advancedTexture.addControl(button);
-
-    button.onPointerClickObservable.add(function () {
-        let finalPath =  heldKarpSetup(distanceMatrix, 0);
-
-        for (let i=0; i < finalPath.length; i++) {
-            animalListWithBellman.push(animalList[finalPath[i]]);
-        }
-
-        for (let i=1; i < finalPath.length  ; i++) {
-            console.log(finalPath[i]);
-            animalListMeshesFinal.push(animalListMeshes[finalPath[i] - 1]);
-        }
-
-        let points = [];
-        for (let i = 0; i < animalList.length; i++) {
-            points.push(new BABYLON.Vector3(animalListWithBellman[i].x, 0.1, animalListWithBellman[i].z ));
-        }
-
-        //Draw the curve
-        let track = BABYLON.MeshBuilder.CreateLines('track', {points: points}, scene);
-        track.color = new BABYLON.Color3(1, 0.5, 0.8);
-        track.enableEdgesRendering();
-        track.edgesWidth = 6.0;
-
-    });
-}
-
-function distanceVector( x1,y1,z1, x2,y2,z2 )
-{
-    var dx = x1 - x2;
-    var dy = y1 - y2;
-    var dz = z1 - z2;
-
-    return  Math.sqrt( dx * dx + dy * dy + dz * dz );
 }
 
 function createGarbage(count, obj) {
@@ -470,7 +482,6 @@ function createGarbage(count, obj) {
         }
 
     });
-
 }
 
 function createLodge(obj) {
@@ -528,18 +539,53 @@ function healAnimal() {
         }
     }
 
-     if (temp < 3 ) {
-        let sk1 = scene.getNodeByName(currentAnimal).skeleton;
-        let x = animalListWithBellman[ii].x;
-        let z = animalListWithBellman[ii].z;
-        scene.getNodeByName(currentAnimal).rotation = new BABYLON.Vector3(0,0,0);
-        scene.beginAnimation(sk1, 0, 73, true, 0.8);
-        animalCount -= 1;
-        textblock.text = "Animals: " + animalCount;
+    if (!animalHealList[ii] ) {
+         if (temp < 3 ) {
+            let sk1 = scene.getNodeByName(currentAnimal).skeleton;
+            let x = animalListWithBellman[ii].x;
+            let z = animalListWithBellman[ii].z;
+            scene.getNodeByName(currentAnimal).rotation = new BABYLON.Vector3(0,0,0);
+            scene.beginAnimation(sk1, 0, 73, true, 0.8);
+            animalCount -= 1;
+            textblock.text = "Animals: " + animalCount;
 
-        score += 20;
-        textblock2.text = "Score: " + score;
+            score += 20;
+            textblock2.text = "Score: " + score;
+            animalHealList[ii] = true;
+        }
     }
+}
+
+function calculatePath() {
+    let finalPath =  heldKarpSetup(distanceMatrix, 0);
+
+    for (let i=0; i < finalPath.length; i++) {
+        animalListWithBellman.push(animalList[finalPath[i]]);
+    }
+
+    for (let i=1; i < finalPath.length  ; i++) {
+        console.log(finalPath[i]);
+        animalListMeshesFinal.push(animalListMeshes[finalPath[i] - 1]);
+    }
+      for (let i=1; i < finalPath.length  ; i++) {
+          animalHealList.push(false);
+    }
+
+    for (let i = 0; i < animalList.length; i++) {
+        points.push(new BABYLON.Vector3(animalListWithBellman[i].x, 0.1, animalListWithBellman[i].z ));
+    }
+}
+
+function drawPath() {
+    //Draw the curve
+    track = BABYLON.MeshBuilder.CreateLines('track', {points: points}, scene);
+    track.color = new BABYLON.Color3(0.1, 0.5, 0.2);
+    track.enableEdgesRendering();
+    track.edgesWidth = 6.0;
+}
+
+function destroyPath() {
+    track.isVisible = false;
 }
 
 let renderLoop = function () {

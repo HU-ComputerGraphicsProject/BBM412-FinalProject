@@ -144,9 +144,10 @@ function heldKarp(tourDist, cities) {
     }
 
 
+    console.log(incumbent1);
     console.log(subsetCities);
 
-    //console.log("finalPath   " + finalPath);
+    console.log("finalPath   " + finalPath);
      console.log(subsetCosts);
 
     return finalPath;
