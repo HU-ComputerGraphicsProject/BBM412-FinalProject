@@ -116,7 +116,7 @@ textblock2.top = "-400px";
 textblock2.left = "-850px";
 textblock2.color = "white";
 advancedTexture.addControl(textblock2);
-
+/*
 // Invisible borders
 let border0 = BABYLON.Mesh.CreateBox("border0", 1, scene);
 border0.scaling = new BABYLON.Vector3(1, 100, 100);
@@ -141,10 +141,10 @@ border3.scaling = new BABYLON.Vector3(100, 100, 1);
 border3.position.z = -50.0;
 border3.checkCollisions = true;
 border3.isVisible = false;
-
+*/
 // Ground
-let ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/c.png", 100, 100, 100, 0, -0.1, scene, false);
-let groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
+var ground = BABYLON.MeshBuilder.CreateGround("ground", { height: 50, width: 50, subdivisions: 4 }, scene);
+let groundMaterial = new BABYLON.StandardMaterial("ground", scene);
 groundMaterial.diffuseTexture = new BABYLON.Texture("textures/rock.png", scene);
 
 groundMaterial.diffuseTexture.uScale = 6;
@@ -153,7 +153,7 @@ groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
 groundMaterial.emissiveColor = new BABYLON.Color3(0.3, 0.3, 0.3);
 ground.material = groundMaterial;
 ground.receiveShadows = true;
-//ground.checkCollisions = true;
+ground.checkCollisions = true;
 
 // Keyboard events
 let inputMap = {};
@@ -177,8 +177,6 @@ let garbageList = [];
 let garbagePositionList = [];
 let hero = null;
 
-ground.onReady = function () {
-    ground.optimize(100);
 
     // Shadows
     let shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
@@ -212,7 +210,7 @@ ground.onReady = function () {
     let leaves_on_branch = 5;
     let leaf_wh_ratio = 0.5;
 
-
+/*
                     //Create Trees
                     BABYLON.SceneLoader.ImportMesh("", "//www.babylonjs.com/assets/Tree/", "tree.babylon", scene, function (newMeshes) {
                         newMeshes[0].material.opacityTexture = null;
@@ -254,6 +252,7 @@ ground.onReady = function () {
                        // camera.checkCollisions = true;
                        // camera.applyGravity = true;
                     });
+*/
 
     createGarbage(3, "cyawan.glb");
     createGarbage(3, "cup.glb");
@@ -436,7 +435,7 @@ ground.onReady = function () {
         track.edgesWidth = 6.0;
 
     });
-}
+
 
 function distanceVector( x1,y1,z1, x2,y2,z2 )
 {
