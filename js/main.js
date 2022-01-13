@@ -35,32 +35,23 @@ BABYLON.DefaultLoadingScreen.prototype.hideLoadingUI = function(){
 
 engine.displayLoadingUI();
 let scene = new BABYLON.Scene(engine);
-scene.ambientColor = BABYLON.Color3.FromInts(10, 30, 10);
-scene.clearColor = BABYLON.Color3.FromInts(135, 206, 250);
-//scene.gravity = new BABYLON.Vector3(0, -9.8, 0);
+scene.ambientColor = BABYLON.Color3.FromInts(0.1, 0.1, 0.1);
+scene.clearColor = BABYLON.Color3.FromInts(0.1, 0.1, 0.1);
 //scene.fogMode = BABYLON.Scene.FOGMODE_EXP;
-//scene.fogDensity = 0.02;
+//scene.fogDensity = 0.00002;
 //scene.fogColor = scene.clearColor;
 
-/*
-let camera1 = new BABYLON.ArcRotateCamera("camera1", Math.PI / 2, Math.PI / 4, 10, new BABYLON.Vector3(0, -5, 0), scene);
-scene.activeCamera = camera1;
-scene.activeCamera.attachControl(canvas, true);
-camera1.lowerRadiusLimit = 2;
-camera1.upperRadiusLimit = 10;
-camera1.wheelDeltaPercentage = 0.01;
-*/
+var soundSprite = new BABYLON.Sound("", "/sounds/ForestAmbience.mp3", scene, null, { loop: true, autoplay: true, length: 9.200, offset: 14.000 });
 
-const camera = new BABYLON.ArcRotateCamera('arcCamera1', 0, 0, 10, BABYLON.Vector3.Zero(), scene)
-// camera.lowerRadiusLimit = camera.upperRadiusLimit = camera.radius;
+let camera = new BABYLON.ArcRotateCamera("camera1", Math.PI / 2, Math.PI / 4, 10, new BABYLON.Vector3(30, 0, 10), scene);
 camera.attachControl(canvas, false)
 camera.setPosition(new BABYLON.Vector3(50, 100, 100))
 camera.checkCollisions = true
 camera.applyGravity = true
 camera.ellipsoid = new BABYLON.Vector3(1, 1, 1);
 
-camera.lowerRadiusLimit = 2
-camera.upperRadiusLimit = 20
+camera.lowerRadiusLimit = 8
+camera.upperRadiusLimit = 10
 
 camera.keysLeft = []
 camera.keysRight = []
@@ -74,7 +65,7 @@ scene.gravity = new BABYLON.Vector3(0, earthGravity / assumedFramesPerSecond, 0)
 //let light = new BABYLON.PointLight("light", new BABYLON.Vector3(10, 10, 0), scene);
 let light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, -0.5, -1.0), scene);
 light.position = new BABYLON.Vector3(0, -5, -5);
-light.intensity = 2.5;
+light.intensity = 3;
 light.range = 100;
 
 // Skybox
@@ -174,26 +165,34 @@ let track = null;
 let heroSpeed = 0;
 
 var textblockRules = new BABYLON.GUI.TextBlock();
-textblockRules.text = "Press START!";
-textblockRules.fontSize = 18;
+textblockRules.text =
+    "You can walk and direct press a, s, d and w keys\n\n " +
+    "You can show the shortest path between the injured animals press q key\n\n" +
+    "You can collect garbages press e key\n\n" +
+    "You can heal the animals press r key\n\n" +
+    "You can plant flowers and trees press t key\n\n"
+    "Press start!\\n\\n\" +"
+;
+textblockRules.fontSize = 20;
+textblockRules.fontStyle = "bold";
 textblockRules.fontFamily = "Segoe UI"
-textblockRules.height = "100px";
-textblockRules.top = "80px";
+textblockRules.height = "300px";
+textblockRules.top = "280px";
 textblockRules.color = "Yellow";
 textblockRules.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
 textblockRules.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
 advancedTexture.addControl(textblockRules);
 
 var buttonStart = BABYLON.GUI.Button.CreateSimpleButton("onoff", "START");
-buttonStart.width = "100px";
+buttonStart.width = "200px";
 buttonStart.height = "100px";
-buttonStart.color = "white";
+buttonStart.top = "180px";
 buttonStart.fontSize = 30;
 buttonStart.fontFamily = "Segoe UI"
 buttonStart.cornerRadius = 20;
 buttonStart.paddingBottom = 5;
 buttonStart.thickness = 2;
-buttonStart.background = "green";
+buttonStart.background = "white";
 
 buttonStart.onPointerClickObservable.add(function() {
     let isStart = true;
@@ -211,7 +210,6 @@ advancedTexture.addControl(buttonStart);
 let texList=[];
 let shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
 let manager = new BABYLON.GUI.GUI3DManager(scene);
-
 
 let animalList = [];
 let animalListWithBellman = [];
@@ -256,133 +254,11 @@ BABYLON.Effect.ShadersStore["customFragmentShader"]=`
 ground.onReady = async function () {
     ground.optimize(100);
 
-    // Shadows
-    //let shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
-
-    // Trees
-
-    //leaf material
-    let green = new BABYLON.StandardMaterial("green", scene);
-    green.diffuseColor = new BABYLON.Color3(0,1,0);
-
-    //trunk and branch material
-    let bark = new BABYLON.StandardMaterial("bark", scene);
-    bark.emissiveTexture = new BABYLON.Texture("https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Bark_texture_wood.jpg/800px-Bark_texture_wood.jpg", scene);
-    bark.diffuseTexture = new BABYLON.Texture("https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Bark_texture_wood.jpg/800px-Bark_texture_wood.jpg", scene);
-    bark.diffuseTexture.uScale = 2.0;//Repeat 5 times on the Vertical Axes
-    bark.diffuseTexture.vScale = 2.0;//Repeat 5 times on the Horizontal Axes
-
-
-    //Tree parameters
-    let trunk_height = 10;
-    let trunk_taper = 0.5;
-    let trunk_slices = 5;
-    let boughs = 2; // 1 or 2
-    let forks = 4;
-    let fork_angle = Math.PI/4;
-    let fork_ratio = 2/(1+Math.sqrt(3)); //PHI the golden ratio
-    let branch_angle = Math.PI/3;
-    let bow_freq = 1;
-    let bow_height = 1.5;
-    let branches = 5;
-    let leaves_on_branch = 5;
-    let leaf_wh_ratio = 0.5;
-
-
-                    //Create Trees
-                    BABYLON.SceneLoader.ImportMesh("", "//www.babylonjs.com/assets/Tree/", "tree.babylon", scene, function (newMeshes) {
-                        newMeshes[0].material.opacityTexture = null;
-                        newMeshes[0].material.backFaceCulling = false;
-                        newMeshes[0].isVisible = false;
-                        newMeshes[0].position.y = ground.getHeightAtCoordinates(0, 0); // Getting height from ground object
-                        shadowGenerator.getShadowMap().renderList.push(newMeshes[0]);
-                        let range = 60;
-                        let count = 100;
-                        for (let index = 0; index < 10; index++) {
-                            let newInstance = newMeshes[0].createInstance("i" + index);
-                            let x = Math.random() * range;
-                            let z = Math.random() * range;
-
-                            let y = ground.getHeightAtCoordinates(x, z); // Getting height from ground object
-                            newInstance.position = new BABYLON.Vector3(x, y, z);
-                            newInstance.rotate(BABYLON.Axis.Y, Math.random() * Math.PI * 2, BABYLON.Space.WORLD);
-                            newInstance.scaling = new BABYLON.Vector3(50.1,50.1,50.1);
-
-                            shadowGenerator.getShadowMap().renderList.push(newInstance);
-                        }
-
-                        //SPS Tree Generator
-                        for (let i = 0; i <10 ; i++) {
-                            let tree = createTree(trunk_height, trunk_taper, trunk_slices, bark, boughs, forks, fork_angle, fork_ratio, branches, branch_angle, bow_freq, bow_height, leaves_on_branch, leaf_wh_ratio, green, scene);
-                            let x = range / 2 - Math.random() * range;
-                            let z = range / 2 - Math.random() * range;
-                            let y = ground.getHeightAtCoordinates(x, z);
-                            //TODO:Ağaçları küçült ya da hazırları büyült
-                            //tree.scale=new BABYLON.Vector3(0.020, 0.020, 0.020);
-                            tree.position=new BABYLON.Vector3(x, y, z) ;
-                            tree.scaling = new BABYLON.Vector3(0.5,0.5,0.5);
-                        }
-
-                        shadowGenerator.getShadowMap().refreshRate = 0; // We need to compute it just once
-                        shadowGenerator.usePoissonSampling = true;
-
-                        // Collisions
-                       // camera.checkCollisions = true;
-                       // camera.applyGravity = true;
-                    });
-
-    createGarbage(3, "cyawan.glb");
-    createGarbage(3, "cup.glb");
-    createGarbage(3,"fork.glb");
+    createTrees();
+    createGarbage(8, "cyawan.glb");
+    createGarbage(8, "cup.glb");
     createGarbage(10,"apple.glb");
     //createLodge("lodge.glb");
-
-    BABYLON.SceneLoader.ImportMesh("Rabbit", "/scenes/", "Rabbit.babylon", scene, function (newMeshes, particleSystems, skeletons) {
-        let rabbit = newMeshes[1];
-        rabbit.scaling = new BABYLON.Vector3(0.015, 0.015, 0.015);
-        //rabbit.position.y = 50;
-        rabbit.isVisible = false;
-        animalList.push(new BABYLON.Vector3(0, 0, 0));
-        for (let x = 0; x < 5; x++) {
-            let rabbit_family1=rabbit.clone("rabbit_family"+x);
-            rabbit_family1.isVisible = true;
-            shadowGenerator.getShadowMap().renderList.push(rabbit_family1);
-            rabbit_family1.position.x =  Math.random() * 50;
-            rabbit_family1.position.y = 0.1;
-            rabbit_family1.position.z = Math.random() * 50 ;
-
-            rabbit_family1.skeleton = rabbit.skeleton.clone("clonedSkeleton1");
-
-            matrix = BABYLON.Matrix.Translation(20, 276, -30*2);
-            matrix.addToSelf(BABYLON.Matrix.Scaling(.5,.5,.5));
-            idx = rabbit_family1.thinInstanceAdd(matrix);
-
-            animalList.push(new BABYLON.Vector3(rabbit_family1.position.x, rabbit_family1.position.y, rabbit_family1.position.z));
-            animalListMeshes.push("rabbit_family"+x);
-            // animalList.push(rabbit_family1));
-
-        }
-
-        //TODO: Tavşanlar düzgün dağılmıyor
-        /*for (let i = 0; i <5; i++) {
-            let sk1 = scene.getNodeByName("rabbit_family"+i).skeleton;
-            scene.beginAnimation(sk1, 0, 73, true, 0.8);
-        }*/
-
-        // console.log(animalList.length);
-        //console.log(animalList);
-
-        for (let i = 0; i < animalList.length; i++) {
-            let tempMatrix = [];
-            for (let j=0; j < animalList.length; j++) {
-                tempMatrix.push(distanceVector(animalList[i].x, animalList[i].y, animalList[i].z, animalList[j].x, animalList[j].y, animalList[j].z));
-            }
-            distanceMatrix.push(tempMatrix);
-        }
-
-        // camera.checkCollisions = true;
-        // camera.applyGravity = true;
-    });
 
     loadCharacter();
 
@@ -396,10 +272,12 @@ function distanceVector( x1,y1,z1, x2,y2,z2 )
 
     return  Math.sqrt( dx * dx + dy * dy + dz * dz );
 }
+animalList.push(new BABYLON.Vector3(0, 0, 0));
+
     //Load animals
-    createAnimal(3,"Playfuldog.glb",1,0.5);
-    createAnimal(3,"pig.babylon",0,0.03);
-    createAnimal(3,"chicken.babylon",0,0.009);
+    createAnimal(2,"Playfuldog.glb",1,0.5);
+    createAnimal(2,"pig.babylon",0,0.03);
+    createAnimal(1,"chicken.babylon",0,0.009);
 
 
 async function loadCharacter() {
@@ -451,6 +329,11 @@ async function loadCharacter() {
             }
             if (inputMap["r"]) {
                 healAnimal();
+                changeColor();
+                keydown = true;
+            }
+            if (inputMap["t"]) {
+                backgroundBox.isVisible = true;
                 keydown = true;
             }
             if (inputMap["q"]) {
@@ -498,9 +381,6 @@ async function loadCharacter() {
         engine.hideLoadingUI();
     });
 
-
-    //FLOWERS
-
     // Load a GUI from the snippet server.
     let gui = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("GUI", true, scene);
     let loadedGUI = await gui.parseFromSnippetAsync("FZ9KU3#9");
@@ -511,31 +391,6 @@ async function loadCharacter() {
     // Get a control by name a change a property.
     let backgroundBox = gui.getControlByName("BackgroundBox");
     backgroundBox.isVisible = false;
-
-    /*
-        let menubox = gui.getControlByName("Menubox");
-        menubox.isVisible = true;
-
-        let healBtn = gui.getControlByName("HealBtn");
-        let showPathBtn = gui.getControlByName("ShowPathBtn");
-        let plantBtn = gui.getControlByName("PlantBtn");
-    */
-
-
-    let choosePlant = BABYLON.GUI.Button.CreateSimpleButton("but", "Plant");
-    choosePlant.width = 0.1;
-    choosePlant.height = "30px";
-    choosePlant.color = "white";
-    choosePlant.background = "green";
-    choosePlant.top = "-300px";
-    choosePlant.left = "800px";
-    advancedTexture.addControl(choosePlant);
-
-    choosePlant.onPointerClickObservable.add(() => {
-        backgroundBox.isVisible = true;
-        choosePlant.isVisible = false;
-    });
-
 
     var scaleFactor;
     var plant;
@@ -556,7 +411,6 @@ async function loadCharacter() {
 
     exitButton.onPointerClickObservable.add(() => {
         backgroundBox.isVisible = false;
-        choosePlant.isVisible = true;
     });
 
     roseBtn.onPointerClickObservable.add(() => {
@@ -564,7 +418,6 @@ async function loadCharacter() {
         plant = "Rose";
         scaleFactor = 0.2;
         backgroundBox.isVisible = false;
-        choosePlant.isVisible = true;
 
     });
 
@@ -573,7 +426,6 @@ async function loadCharacter() {
         plant = "Daisy";
         scaleFactor = 0.2;
         backgroundBox.isVisible = false;
-        choosePlant.isVisible = true;
 
     });
 
@@ -582,7 +434,6 @@ async function loadCharacter() {
         plant = "Shrub";
         scaleFactor = 0.03;
         backgroundBox.isVisible = false;
-        choosePlant.isVisible = true;
     });
 
 
@@ -591,7 +442,6 @@ async function loadCharacter() {
         plant = "Tulip";
         scaleFactor = 0.2;
         backgroundBox.isVisible = false;
-        choosePlant.isVisible = true;
 
     });
 
@@ -600,7 +450,6 @@ async function loadCharacter() {
         plant = "Sunflower";
         scaleFactor = 0.5;
         backgroundBox.isVisible = false;
-        choosePlant.isVisible = true;
 
     });
 
@@ -609,7 +458,6 @@ async function loadCharacter() {
         plant = "WhiteOakTree";
         scaleFactor = 0.05;
         backgroundBox.isVisible = false;
-        choosePlant.isVisible = true;
 
     });
 
@@ -618,7 +466,6 @@ async function loadCharacter() {
         plant = "rocks_trees_ao";
         scaleFactor = 0.5;
         backgroundBox.isVisible = false;
-        choosePlant.isVisible = true;
 
     });
 
@@ -627,7 +474,6 @@ async function loadCharacter() {
         plant = "AppleTree";
         scaleFactor = 0.05;
         backgroundBox.isVisible = false;
-        choosePlant.isVisible = true;
 
     });
 
@@ -636,18 +482,8 @@ async function loadCharacter() {
         plant = "grass";
         scaleFactor = 2.5;
         backgroundBox.isVisible = false;
-        choosePlant.isVisible = true;
 
     });
-
-
-    /*
-    particleSystem.start();
-        window.setTimeout(function () {
-             particleSystem.stop();
-        }, 250);
-
-     */
 
     let vector = {x: '', y: '', z: ''};
     scene.onPointerDown = function (event, pickResult) {
@@ -675,14 +511,12 @@ async function loadCharacter() {
                             newInstance.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
 
                             shadowGenerator.getShadowMap().renderList.push(newInstance);
+                            score += 5;
+                            textblock2.text = "Score: " + score;
                         }
-
                     }
-
-
                     shadowGenerator.getShadowMap().refreshRate = 0; // We need to compute it just once
                     shadowGenerator.usePoissonSampling = true;
-
                 });
 
                 var animations = [];
@@ -703,43 +537,17 @@ async function loadCharacter() {
                             var newInstance = newMeshes[i].createInstance("i" + index);
                             animations.push(newInstance);
                             newInstance.position = new BABYLON.Vector3(vector.x + 1, -0.05, vector.z);
-                            newInstance.scaling = new BABYLON.Vector3(300, 300, 300);
+                            newInstance.scaling = new BABYLON.Vector3(50, 50, 50);
 
                             shadowGenerator.getShadowMap().renderList.push(newInstance);
                         }
-
                     }
-
                     shadowGenerator.getShadowMap().refreshRate = 0; // We need to compute it just once
                     shadowGenerator.usePoissonSampling = true;
-
                 });
-
-
-                /* window.setTimeout(function () {
-                     stopAni(animations);
-                     console.log("dömöd");
-                 }, 650);
-
-
-                 function stopAni( animations )
-                 {
-                     console.log(animations.length);
-                     console.log("knskns");
-                     for (let i = 0; i <9 ; i++) {
-                         var ani=animations[i];
-                         for (let i = 1; i <ani.length ; i++) {
-                             ani[i].isVisible = false;
-                             console.log("dn");
-                         }
-                     }
-                 }*/
             }
-
         }
-
     }
-
 }
 
 function createGarbage(count, obj) {
@@ -790,10 +598,9 @@ function createAnimal(count, obj , num , scaleFactor) {
         newMeshes[num].position.y = ground.getHeightAtCoordinates(0, 0); // Getting height from ground object
         shadowGenerator.getShadowMap().renderList.push(newMeshes[num]);
         var range = 50;
-        var count = 3;
 
         for (var index = 0; index < count; index++) {
-            var newInstance = newMeshes[num].createInstance("i" + index);
+            var newInstance = newMeshes[num].createInstance(obj + "" + index);
             var x = Math.random() * range;
             var z =  Math.random() * range;
 
@@ -801,6 +608,9 @@ function createAnimal(count, obj , num , scaleFactor) {
             newInstance.position = new BABYLON.Vector3(x, y, z);
             newInstance.rotate(BABYLON.Axis.Y, Math.random() * Math.PI * 2, BABYLON.Space.WORLD);
             newInstance.scaling.addInPlace(new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor));
+
+            animalList.push(new BABYLON.Vector3(x, y, z));
+            animalListMeshes.push(obj + "" + index);
 
             shadowGenerator.getShadowMap().renderList.push(newInstance);
 
@@ -845,17 +655,101 @@ function createAnimal(count, obj , num , scaleFactor) {
             pushButton2.onPointerClickObservable.add((e)=>{
                 console.log('PushButton1 pushed!');
                 changeColor();
-
             });
-
-
         }
         shadowGenerator.getShadowMap().refreshRate = 0; // We need to compute it just once
         shadowGenerator.usePoissonSampling = true;
 
+        for (let i = 0; i < animalList.length; i++) {
+            let tempMatrix = [];
+            for (let j=0; j < animalList.length; j++) {
+                tempMatrix.push(distanceVector(animalList[i].x, animalList[i].y, animalList[i].z, animalList[j].x, animalList[j].y, animalList[j].z));
+            }
+            console.log(tempMatrix);
+            distanceMatrix.push(tempMatrix);
+        }
+
+        let tempMatrix = [];
+        for (let i = 0; i < distanceMatrix.length; i++) {
+            if (distanceMatrix[i].length == 6) {
+                tempMatrix.push(distanceMatrix[i]);
+            }
+        }
+
+        distanceMatrix = tempMatrix;
+
+        console.log(distanceMatrix);
+
+
     });
 
 }
+
+function createTrees() {
+
+    let green = new BABYLON.StandardMaterial("green", scene);
+    green.diffuseColor = new BABYLON.Color3(0,1,0);
+
+    //trunk and branch material
+    let bark = new BABYLON.StandardMaterial("bark", scene);
+    bark.emissiveTexture = new BABYLON.Texture("https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Bark_texture_wood.jpg/800px-Bark_texture_wood.jpg", scene);
+    bark.diffuseTexture = new BABYLON.Texture("https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Bark_texture_wood.jpg/800px-Bark_texture_wood.jpg", scene);
+    bark.diffuseTexture.uScale = 2.0;//Repeat 5 times on the Vertical Axes
+    bark.diffuseTexture.vScale = 2.0;//Repeat 5 times on the Horizontal Axes
+
+    //Tree parameters
+    let trunk_height = 10;
+    let trunk_taper = 0.5;
+    let trunk_slices = 5;
+    let boughs = 2; // 1 or 2
+    let forks = 4;
+    let fork_angle = Math.PI/4;
+    let fork_ratio = 2/(1+Math.sqrt(3)); //PHI the golden ratio
+    let branch_angle = Math.PI/3;
+    let bow_freq = 1;
+    let bow_height = 1.5;
+    let branches = 5;
+    let leaves_on_branch = 5;
+    let leaf_wh_ratio = 0.5;
+
+    //Create Trees
+    BABYLON.SceneLoader.ImportMesh("", "//www.babylonjs.com/assets/Tree/", "tree.babylon", scene, function (newMeshes) {
+        newMeshes[0].material.opacityTexture = null;
+        newMeshes[0].material.backFaceCulling = false;
+        newMeshes[0].isVisible = false;
+        newMeshes[0].position.y = ground.getHeightAtCoordinates(0, 0); // Getting height from ground object
+        shadowGenerator.getShadowMap().renderList.push(newMeshes[0]);
+        let range = 120;
+        for (let index = 0; index < 100; index++) {
+            let newInstance = newMeshes[0].createInstance("i" + index);
+            let x = range / 2 - Math.random() * range;
+            let z = range / 2 - Math.random() * range;
+
+            let y = ground.getHeightAtCoordinates(x, z); // Getting height from ground object
+            newInstance.position = new BABYLON.Vector3(x, y, z);
+            newInstance.rotate(BABYLON.Axis.Y, Math.random() * Math.PI * 2, BABYLON.Space.WORLD);
+            newInstance.scaling = new BABYLON.Vector3(50.1,50.1,50.1);
+
+            shadowGenerator.getShadowMap().renderList.push(newInstance);
+        }
+
+        //SPS Tree Generator
+        for (let i = 0; i <10 ; i++) {
+            let tree = createTree(trunk_height, trunk_taper, trunk_slices, bark, boughs, forks, fork_angle, fork_ratio, branches, branch_angle, bow_freq, bow_height, leaves_on_branch, leaf_wh_ratio, green, scene);
+            let x = range / 2 - Math.random() * range;
+            let z = range / 2 - Math.random() * range;
+            let y = ground.getHeightAtCoordinates(x, z);
+            //TODO:Ağaçları küçült ya da hazırları büyült
+            //tree.scale=new BABYLON.Vector3(0.020, 0.020, 0.020);
+            tree.position=new BABYLON.Vector3(x, y, z) ;
+            tree.scaling = new BABYLON.Vector3(0.5,0.5,0.5);
+        }
+
+        shadowGenerator.getShadowMap().refreshRate = 0; // We need to compute it just once
+        shadowGenerator.usePoissonSampling = true;
+    });
+}
+
 function changeColor() {
     let temp = 1000;
     let currentGarbage = null;
@@ -873,13 +767,11 @@ function changeColor() {
     }
 
     if (temp < 5 ) {
-
         var tex2 = new BABYLON.DynamicTexture("name", {width: 256, height: 256}, scene);
         var font2 = "bold 124px monospace";
         tex2.drawText("10", null, null, font2, "black", "green", true, true);
 
         var renderer = scene.enableDepthRenderer(camera, true);
-
 
 // Sprite1
         var spriteMaterial = new BABYLON.ShaderMaterial("mat", scene, {
@@ -918,7 +810,7 @@ function collectGarbage() {
         }
     }
 
-    if (temp < 3 ) {
+    if (temp < 5 ) {
         currentGarbage.position.x = 500;
         currentGarbage.position.y = -100;
         currentGarbage.position.z = 500;
@@ -944,11 +836,8 @@ function healAnimal() {
     }
 
     if (!animalHealList[ii] ) {
-         if (temp < 3 ) {
+         if (temp < 5 ) {
             let sk1 = scene.getNodeByName(currentAnimal).skeleton;
-            let x = animalListWithBellman[ii].x;
-            let z = animalListWithBellman[ii].z;
-            scene.getNodeByName(currentAnimal).rotation = new BABYLON.Vector3(0,0,0);
             scene.beginAnimation(sk1, 0, 73, true, 0.8);
             animalCount -= 1;
             textblock.text = "Animals: " + animalCount;
