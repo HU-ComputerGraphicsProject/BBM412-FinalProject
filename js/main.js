@@ -92,7 +92,7 @@ advancedTexture.addControl(instructions);
 
 let animalCount = 5;
 let textblock = new BABYLON.GUI.TextBlock();
-textblock.text = "Animals: " + animalCount;
+textblock.text = "Injured animals: " + animalCount;
 textblock.fontSize = 24;
 textblock.top = "-450px";
 textblock.left = "-850px";
